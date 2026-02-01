@@ -7,7 +7,31 @@ exports.register = async (req, res) => {
   try {
     console.log('Register request received:', req.body);
     
-    const { name, email, password, userType, phone, location } = req.body;
+    // Map 'role' from frontend to 'userType' for backend
+    const { name, email, password, role, userType, phone, location, farmSize, farmingExperience, confirmPassword,
+            businessName, contractorType, contractorExperience, state, district, city, fullAddress } = req.body;
+    const mappedUserType = userType || role; // Use userType if provided, otherwise use role
+    
+    // Validate password confirmation
+    if (password !== confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Passwords do not match'
+      });
+    }
+
+    // Map 'buyer' to 'contractor' for consistency
+    const finalUserType = mappedUserType === 'buyer' ? 'contractor' : mappedUserType;
+
+    // Validate contractor mandatory fields
+    if (finalUserType === 'contractor') {
+      if (!businessName || !contractorType || !contractorExperience || !state || !district || !city || !fullAddress) {
+        return res.status(400).json({
+          success: false,
+          message: 'All contractor fields are required'
+        });
+      }
+    }
 
     // Check if user exists
     const existingUser = await User.findOne({ email: email });
@@ -25,14 +49,29 @@ exports.register = async (req, res) => {
     // const hashedPassword = await bcrypt.hash(password, salt);
 
     // Create user
-    const user = new User({
+    const userData = {
       name,
       email,
       password: password, // Simple for testing
-      userType,
+      userType: finalUserType,
       phone: phone || '',
-      location: location || {}
-    });
+      location: location || '',
+      farmSize: farmSize ? parseFloat(farmSize) : null,
+      farmingExperience: farmingExperience ? parseInt(farmingExperience) : null
+    };
+
+    // Add contractor fields if contractor
+    if (finalUserType === 'contractor') {
+      userData.businessName = businessName;
+      userData.contractorType = contractorType;
+      userData.contractorExperience = parseInt(contractorExperience);
+      userData.state = state;
+      userData.district = district;
+      userData.city = city;
+      userData.fullAddress = fullAddress;
+    }
+
+    const user = new User(userData);
 
     await user.save();
     console.log('User saved successfully:', user._id);
@@ -41,21 +80,37 @@ exports.register = async (req, res) => {
     const token = jwt.sign(
       { userId: user._id, userType: user.userType },
       process.env.JWT_SECRET || 'test_secret',
-      { expiresIn: '30d' }
+      { expiresIn: '60m' }
     );
+
+    const userResponse = {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.userType, // Map userType to role for frontend
+      userType: user.userType, // Keep userType for backward compatibility
+      phone: user.phone,
+      location: user.location,
+      farmSize: user.farmSize,
+      farmingExperience: user.farmingExperience
+    };
+
+    // Add contractor fields if contractor
+    if (user.userType === 'contractor') {
+      userResponse.businessName = user.businessName;
+      userResponse.contractorType = user.contractorType;
+      userResponse.contractorExperience = user.contractorExperience;
+      userResponse.state = user.state;
+      userResponse.district = user.district;
+      userResponse.city = user.city;
+      userResponse.fullAddress = user.fullAddress;
+    }
 
     res.status(201).json({
       success: true,
       message: 'User registered successfully',
       token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        userType: user.userType,
-        phone: user.phone,
-        location: user.location
-      }
+      user: userResponse
     });
   } catch (error) {
     console.error('Registration error:', error);
@@ -99,21 +154,43 @@ exports.login = async (req, res) => {
     const token = jwt.sign(
       { userId: user._id, userType: user.userType },
       process.env.JWT_SECRET || 'test_secret',
-      { expiresIn: '30d' }
+      { expiresIn: '60m' }
     );
+
+    const userResponse = {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.userType, // Map userType to role for frontend
+      userType: user.userType, // Keep userType for backward compatibility
+      phone: user.phone,
+      location: user.location,
+      farmSize: user.farmSize,
+      farmingExperience: user.farmingExperience
+    };
+
+    // Add contractor fields if contractor
+    if (user.userType === 'contractor') {
+      userResponse.businessName = user.businessName;
+      userResponse.contractorType = user.contractorType;
+      userResponse.contractorExperience = user.contractorExperience;
+      userResponse.state = user.state;
+      userResponse.district = user.district;
+      userResponse.city = user.city;
+      userResponse.fullAddress = user.fullAddress;
+      userResponse.cropsInterested = user.cropsInterested || [];
+      userResponse.minQuantityRequired = user.minQuantityRequired;
+      userResponse.maxQuantityCapacity = user.maxQuantityCapacity;
+      userResponse.preferredQualityGrade = user.preferredQualityGrade;
+      userResponse.gstNumber = user.gstNumber || '';
+      userResponse.panNumber = user.panNumber || '';
+    }
 
     res.json({
       success: true,
       message: 'Login successful',
       token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        userType: user.userType,
-        phone: user.phone,
-        location: user.location
-      }
+      user: userResponse
     });
   } catch (error) {
     console.error('Login error:', error);
@@ -135,13 +212,132 @@ exports.getMe = async (req, res) => {
         message: 'User not found' 
       });
     }
+
+    // Format user response similar to login
+    const userResponse = {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.userType, // Map userType to role for frontend
+      userType: user.userType, // Keep userType for backward compatibility
+      phone: user.phone || '',
+      location: user.location || '',
+      farmSize: user.farmSize,
+      farmingExperience: user.farmingExperience
+    };
+
+    // Add contractor fields if contractor
+    if (user.userType === 'contractor' || user.userType === 'buyer') {
+      userResponse.businessName = user.businessName || '';
+      userResponse.contractorType = user.contractorType || '';
+      userResponse.contractorExperience = user.contractorExperience;
+      userResponse.state = user.state || '';
+      userResponse.district = user.district || '';
+      userResponse.city = user.city || '';
+      userResponse.fullAddress = user.fullAddress || '';
+      userResponse.cropsInterested = user.cropsInterested || [];
+      userResponse.minQuantityRequired = user.minQuantityRequired;
+      userResponse.maxQuantityCapacity = user.maxQuantityCapacity;
+      userResponse.preferredQualityGrade = user.preferredQualityGrade || 'Any';
+      userResponse.gstNumber = user.gstNumber || '';
+      userResponse.panNumber = user.panNumber || '';
+      userResponse.businessLicense = user.businessLicense || '';
+    }
+
     res.json({
       success: true,
-      user
+      user: userResponse
     });
   } catch (error) {
     res.status(500).json({ 
       success: false, 
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+// Update User Profile
+exports.updateProfile = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const updateData = req.body;
+
+    // Find user
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Update allowed fields
+    const allowedFields = [
+      'name', 'phone', 'location', 'farmSize', 'farmingExperience',
+      'businessName', 'contractorType', 'contractorExperience', 
+      'state', 'district', 'city', 'fullAddress',
+      'cropsInterested', 'minQuantityRequired', 'maxQuantityCapacity',
+      'preferredQualityGrade', 'gstNumber', 'panNumber', 'businessLicense'
+    ];
+
+    // Only update allowed fields
+    allowedFields.forEach(field => {
+      if (updateData[field] !== undefined) {
+        if (field === 'farmSize' || field === 'farmingExperience' || 
+            field === 'contractorExperience' || field === 'minQuantityRequired' || 
+            field === 'maxQuantityCapacity') {
+          user[field] = updateData[field] ? parseFloat(updateData[field]) : null;
+        } else if (field === 'cropsInterested' && Array.isArray(updateData[field])) {
+          user[field] = updateData[field];
+        } else {
+          user[field] = updateData[field];
+        }
+      }
+    });
+
+    await user.save();
+
+    // Prepare response
+    const userResponse = {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.userType, // Map userType to role for frontend
+      userType: user.userType, // Keep userType for backward compatibility
+      phone: user.phone || '',
+      location: user.location || '',
+      farmSize: user.farmSize,
+      farmingExperience: user.farmingExperience
+    };
+
+    // Add contractor fields if contractor
+    if (user.userType === 'contractor' || user.userType === 'buyer') {
+      userResponse.businessName = user.businessName || '';
+      userResponse.contractorType = user.contractorType || '';
+      userResponse.contractorExperience = user.contractorExperience;
+      userResponse.state = user.state || '';
+      userResponse.district = user.district || '';
+      userResponse.city = user.city || '';
+      userResponse.fullAddress = user.fullAddress || '';
+      userResponse.cropsInterested = user.cropsInterested || [];
+      userResponse.minQuantityRequired = user.minQuantityRequired;
+      userResponse.maxQuantityCapacity = user.maxQuantityCapacity;
+      userResponse.preferredQualityGrade = user.preferredQualityGrade || 'Any';
+      userResponse.gstNumber = user.gstNumber || '';
+      userResponse.panNumber = user.panNumber || '';
+      userResponse.businessLicense = user.businessLicense || '';
+    }
+
+    res.json({
+      success: true,
+      message: 'Profile updated successfully',
+      user: userResponse
+    });
+  } catch (error) {
+    console.error('Update profile error:', error);
+    res.status(500).json({
+      success: false,
       message: 'Server error',
       error: error.message
     });

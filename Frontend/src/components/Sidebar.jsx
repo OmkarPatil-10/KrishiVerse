@@ -10,17 +10,20 @@ const Sidebar = () => {
     const { t } = useTranslation();
 
     const links = [
-        { name: 'Dashboard', path: '/dashboard', icon: Home, roles: ['farmer', 'buyer', 'admin'] },
-        { name: 'Price Prediction', path: '/prediction', icon: TrendingUp, roles: ['farmer', 'buyer'] },
-        { name: 'Market Prices', path: '/market', icon: TrendingUp, roles: ['farmer', 'buyer'] },
-        { name: 'Contracts', path: '/contracts', icon: Handshake, roles: ['farmer', 'buyer'] },
-        { name: 'Notifications', path: '/notifications', icon: Bell, roles: ['farmer', 'buyer'] },
-        { name: 'Profile', path: '/profile', icon: User, roles: ['farmer', 'buyer', 'admin'] },
-        { name: 'Settings', path: '/settings', icon: Settings, roles: ['farmer', 'buyer', 'admin'] },
+        { name: 'Dashboard', path: '/dashboard', icon: Home, roles: ['farmer', 'contractor', 'admin'] },
+        { name: 'Price Prediction', path: '/prediction', icon: TrendingUp, roles: ['farmer'] },
+        { name: 'Market Prices', path: '/market', icon: TrendingUp, roles: ['farmer'] },
+        { name: 'Contracts', path: '/contracts', icon: Handshake, roles: ['farmer', 'contractor'] },
+        { name: 'Notifications', path: '/notifications', icon: Bell, roles: ['farmer', 'contractor'] },
+        { name: 'Profile', path: '/profile', icon: User, roles: ['farmer', 'contractor', 'admin'] },
+        { name: 'Settings', path: '/settings', icon: Settings, roles: ['farmer', 'contractor', 'admin'] },
         { name: 'Admin Panel', path: '/admin', icon: Shield, roles: ['admin'] },
     ];
 
-    const allowedLinks = links.filter(link => !link.roles || (user && link.roles.includes(user.role)));
+    // Buyer and contractor are the same - normalize to contractor
+    const userRole = user?.role || user?.userType;
+    const normalizedRole = userRole === 'buyer' ? 'contractor' : userRole;
+    const allowedLinks = links.filter(link => !link.roles || (normalizedRole && link.roles.includes(normalizedRole)));
 
     return (
         <aside className="bg-white w-64 min-h-screen border-r border-gray-200 hidden md:block">

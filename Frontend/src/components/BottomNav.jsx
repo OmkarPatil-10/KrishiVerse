@@ -1,17 +1,31 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Star, BarChart3, FileText, Wallet } from 'lucide-react';
+import { Home, Star, BarChart3, FileText, Wallet, Users } from 'lucide-react';
 import { clsx } from 'clsx';
+import { useAuth } from '../context/AuthContext';
 
 const BottomNav = () => {
     const location = useLocation();
+    const { user } = useAuth();
+    // Buyer and contractor are the same entity
+    const userRole = user?.role || user?.userType;
+    const isContractor = userRole === 'contractor' || userRole === 'buyer';
 
-    const navItems = [
+    const farmerNavItems = [
         { name: 'Dashboard', path: '/dashboard', icon: Home },
         { name: 'Prediction', path: '/prediction', icon: Star },
         { name: 'Insights', path: '/market', icon: BarChart3 },
         { name: 'Contracts', path: '/contracts', icon: FileText },
         { name: 'Wallet', path: '/wallet', icon: Wallet },
     ];
+
+    const contractorNavItems = [
+        { name: 'Dashboard', path: '/dashboard', icon: Home },
+        { name: 'Farmer', path: '/farmers', icon: Users },
+        { name: 'Contracts', path: '/contracts', icon: FileText },
+        { name: 'Wallet', path: '/wallet', icon: Wallet },
+    ];
+
+    const navItems = isContractor ? contractorNavItems : farmerNavItems;
 
     return (
         <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 md:hidden">

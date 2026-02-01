@@ -2,6 +2,8 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Bell, User, Sprout, TrendingUp, FileText, BarChart3, Sun, Plus, Search, Wallet, RefreshCw } from 'lucide-react';
 import { useProfileSidebar } from '../context/ProfileSidebarContext';
+import { useAuth } from '../context/AuthContext';
+import ContractorDashboard from './ContractorDashboard';
 import { Line } from 'react-chartjs-2';
 import {
     Chart as ChartJS,
@@ -31,6 +33,13 @@ const Dashboard = () => {
     const { t } = useTranslation();
     const navigate = useNavigate();
     const { openSidebar, isOpen: isSidebarOpen } = useProfileSidebar();
+    const { user } = useAuth();
+
+    // Show contractor dashboard if user is contractor (buyer and contractor are the same)
+    const userRole = user?.role || user?.userType;
+    if (userRole === 'contractor' || userRole === 'buyer') {
+        return <ContractorDashboard />;
+    }
 
     // Chart data for AI Price Forecast
     const chartData = {

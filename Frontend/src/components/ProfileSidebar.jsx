@@ -77,8 +77,8 @@ const ProfileSidebar = () => {
                         <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mb-3">
                             <User className="w-10 h-10 text-gray-400" />
                         </div>
-                        <h3 className="text-xl font-bold mb-1">Omkar Patil</h3>
-                        <p className="text-sm opacity-90">omkarpatil@gmail.com</p>
+                        <h3 className="text-xl font-bold mb-1">{user?.name || 'User'}</h3>
+                        <p className="text-sm opacity-90">{user?.email || 'user@example.com'}</p>
                     </div>
                 </div>
 

@@ -21,4 +21,25 @@ api.interceptors.request.use(
     }
 );
 
+// Add a response interceptor to handle token expiration
+api.interceptors.response.use(
+    (response) => {
+        return response;
+    },
+    (error) => {
+        // Handle 401 Unauthorized (token expired or invalid)
+        if (error.response?.status === 401) {
+            // Clear token and redirect to login
+            localStorage.removeItem('token');
+            localStorage.removeItem('role');
+            
+            // Only redirect if we're not already on the login page
+            if (window.location.pathname !== '/login' && window.location.pathname !== '/register') {
+                window.location.href = '/login';
+            }
+        }
+        return Promise.reject(error);
+    }
+);
+
 export default api;
