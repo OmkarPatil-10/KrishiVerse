@@ -12,6 +12,8 @@ import Settings from './pages/Settings';
 import Admin from './pages/Admin';
 import PricePrediction from './pages/PricePrediction';
 import ContractDetails from './pages/ContractDetails';
+import FarmersList from './pages/FarmersList';
+import FarmerDetails from './pages/FarmerDetails';
 import { useAuth } from './context/AuthContext';
 import PropTypes from 'prop-types';
 
@@ -44,6 +46,8 @@ function App() {
             <Route path="/contracts" element={<Contracts />} />
             <Route path="/contracts/:id" element={<ContractDetails />} />
             <Route path="/notifications" element={<Notifications />} />
+            <Route path="/farmers" element={<FarmersList />} />
+            <Route path="/farmers/:id" element={<FarmerDetails />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/wallet" element={<Wallet />} />
             <Route path="/settings" element={<Settings />} />
