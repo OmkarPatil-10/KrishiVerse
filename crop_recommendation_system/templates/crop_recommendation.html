@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KrishiVerse - AI Crop Predictions</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-green: #2ecc71;
+            --dark-green: #27ae60;
+            --accent-blue: #3498db;
+            --warning-yellow: #f1c40f;
+            --danger-red: #e74c3c;
+            --bg-light: #f8f9fa;
+            --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background: white;
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.05);
+            padding: 1rem 2rem;
+        }
+
+        .navbar-brand {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-link {
+            color: #555;
+            font-weight: 500;
+            margin: 0 1rem;
+        }
+
+        .nav-link:hover {
+            color: var(--primary-green);
+        }
+
+        .main-container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        /* Hero Section */
+        .hero-section {
+            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+            border-radius: 30px;
+            padding: 3rem;
+            color: white;
+            margin-bottom: 2rem;
+            box-shadow: var(--card-shadow);
+        }
+
+        .hero-title {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+        }
+
+        .hero-subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 2rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        /* Main Content Grid */
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        /* Input Card */
+        .input-card {
+            background: white;
+            border-radius: 30px;
+            padding: 2rem;
+            box-shadow: var(--card-shadow);
+        }
+
+        .input-card h3 {
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .input-card .subtitle {
+            color: #777;
+            font-size: 0.95rem;
+            margin-bottom: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #555;
+            font-weight: 500;
+        }
+
+        .form-control, .form-select {
+            border: 2px solid #eef2f6;
+            border-radius: 12px;
+            padding: 0.8rem 1rem;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary-green);
+            box-shadow: 0 0 0 3px rgba(46, 204, 113, 0.1);
+            outline: none;
+        }
+
+        .btn-predict {
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+            color: white;
+            border: none;
+            padding: 1rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 12px;
+            width: 100%;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+            margin-top: 1rem;
+        }
+
+        .btn-predict:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(46, 204, 113, 0.3);
+        }
+
+        .btn-predict:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        /* Result Card */
+        .result-card {
+            background: white;
+            border-radius: 30px;
+            padding: 2rem;
+            box-shadow: var(--card-shadow);
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .result-header h3 {
+            color: #333;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .btn-analyze {
+            background: #f0f9ff;
+            color: var(--accent-blue);
+            border: none;
+            padding: 0.6rem 1.2rem;
+            border-radius: 50px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-analyze:hover {
+            background: var(--accent-blue);
+            color: white;
+        }
+
+        /* Best Crop Card */
+        .best-crop-card {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 20px;
+            padding: 2rem;
+            text-align: center;
+            margin-bottom: 2rem;
+            border: 2px solid var(--primary-green);
+        }
+
+        .best-crop-label {
+            color: #666;
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+        }
+
+        .best-crop-name {
+            color: var(--primary-green);
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .best-crop-confidence {
+            background: white;
+            display: inline-block;
+            padding: 0.5rem 1.5rem;
+            border-radius: 50px;
+            font-weight: 600;
+            color: var(--primary-green);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+
+        /* Recommendations Grid */
+        .recommendations-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .recommendation-card {
+            background: #f8f9fa;
+            border-radius: 20px;
+            padding: 1.5rem;
+            transition: transform 0.3s;
+        }
+
+        .recommendation-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .recommendation-rank {
+            color: var(--primary-green);
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .recommendation-crop {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 1rem;
+        }
+
+        .confidence-bar {
+            background: #eef2f6;
+            border-radius: 10px;
+            height: 8px;
+            width: 100%;
+            margin: 1rem 0;
+        }
+
+        .confidence-fill {
+            background: linear-gradient(90deg, #2ecc71, #27ae60);
+            border-radius: 10px;
+            height: 100%;
+        }
+
+        .confidence-text {
+            display: flex;
+            justify-content: space-between;
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+
+        /* Why This Crop Section */
+        .why-crop-section {
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 2px solid #eef2f6;
+        }
+
+        .why-crop-section h5 {
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .reasons-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .reasons-list li {
+            color: #666;
+            margin-bottom: 0.8rem;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+
+        .reasons-list li:before {
+            content: "•";
+            color: var(--primary-green);
+            font-weight: bold;
+            position: absolute;
+            left: 0;
+        }
+
+        /* Input Summary */
+        .input-summary {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 1rem;
+            margin-top: 1.5rem;
+            display: flex;
+            justify-content: space-around;
+        }
+
+        .summary-item {
+            text-align: center;
+        }
+
+        .summary-label {
+            color: #777;
+            font-size: 0.8rem;
+            margin-bottom: 0.3rem;
+        }
+
+        .summary-value {
+            color: #333;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        /* Loading Animation */
+        .loader-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            display: none;
+        }
+
+        .loader {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid var(--primary-green);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .hero-title {
+                font-size: 2.5rem;
+            }
+            
+            .recommendations-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">KrishiVerse</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Predictions</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Market</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Analysis</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Contact</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="main-container">
+        <!-- Hero Section -->
+        <div class="hero-section">
+            <h1 class="hero-title">KrishiVerse</h1>
+            <p class="hero-subtitle">AI Crop Predictions<br>Smart insights for better farming decisions</p>
+            
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number">5+</div>
+                <div class="stat-label">Years of Data</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ model_accuracy }}</div>
+                <div class="stat-label">Accuracy Rate</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ total_crops }}</div>
+                <div class="stat-label">Crops Supported</div>
+            </div>
+        </div>
+        </div>
+
+        <!-- Error Message (if any) -->
+        {% if error %}
+        <div class="alert alert-danger" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i>{{ error }}
+        </div>
+        {% endif %}
+
+        <!-- Model Info (hidden, but keeping for data) -->
+        {% if model_name and model_accuracy %}
+        <div style="display: none;" id="modelInfo" 
+             data-model-name="{{ model_name }}" 
+             data-model-accuracy="{{ model_accuracy }}"
+             data-total-crops="{{ total_crops }}">
+        </div>
+        {% endif %}
+
+        <!-- Main Content Grid -->
+        <div class="content-grid">
+            <!-- Left Column - Input Form -->
+            <div class="input-card">
+                <h3>AI Crop Predictions</h3>
+                <p class="subtitle">Enter your farm details for personalized recommendations</p>
+                
+                <form id="predictionForm">
+                    <div class="form-group">
+                        <label><i class="fas fa-thermometer-half me-2"></i>Temperature (°C)</label>
+                        <input type="number" class="form-control" id="temperature" name="temperature" 
+                               step="0.1" min="0" max="50" value="25" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label><i class="fas fa-mountain me-2"></i>Soil Type</label>
+                        <select class="form-select" id="soil_type" name="soil_type" required>
+                            <option value="">Select Soil Type</option>
+                            <option value="Low Fertility">Low Fertility</option>
+                            <option value="Medium Fertility" selected>Medium Fertility</option>
+                            <option value="High Fertility">High Fertility</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label><i class="fas fa-cloud-rain me-2"></i>Rainfall Category</label>
+                        <select class="form-select" id="rainfall_category" name="rainfall_category" required>
+                            <option value="">Select Rainfall Category</option>
+                            <option value="Low">Low Rainfall (&lt;100 mm)</option>
+                            <option value="Medium" selected>Medium Rainfall (100-200 mm)</option>
+                            <option value="High">High Rainfall (&gt;200 mm)</option>
+                        </select>
+                    </div>
+                    
+                    <button type="submit" class="btn-predict" id="predictBtn">
+                        <i class="fas fa-magic me-2"></i>Get Recommendations
+                    </button>
+                </form>
+            </div>
+
+            <!-- Right Column - Results -->
+            <div class="result-card" id="resultSection" style="display: none;">
+                <div class="result-header">
+                    <h3>Recommended Crops</h3>
+                    <button class="btn-analyze" onclick="resetForm()">
+                        <i class="fas fa-sync-alt me-2"></i>Analyze Again
+                    </button>
+                </div>
+
+                <!-- Best Crop -->
+                <div class="best-crop-card" id="bestCrop">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+
+                <!-- Top Recommendations -->
+                <h5 style="color: #333;">Other Good Options</h5>
+                <div class="recommendations-grid" id="recommendationsGrid">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+
+                <!-- Why This Crop Section (for best crop) -->
+                <div class="why-crop-section" id="whyThisCrop">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+
+                <!-- Input Summary -->
+                <div class="input-summary" id="inputSummary">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loader-overlay" id="loadingOverlay">
+        <div class="loader"></div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            $('#predictionForm').on('submit', function(e) {
+                e.preventDefault();
+                
+                // Show loading
+                $('#loadingOverlay').show();
+                
+                // Get form data
+                var formData = {
+                    temperature: $('#temperature').val(),
+                    soil_type: $('#soil_type').val(),
+                    rainfall_category: $('#rainfall_category').val()
+                };
+                
+                // Make prediction request
+                $.ajax({
+                    type: 'POST',
+                    url: '/predict-crop',
+                    data: formData,
+                    success: function(response) {
+                        $('#loadingOverlay').hide();
+                        
+                        if (response.error) {
+                            alert('Error: ' + response.error);
+                            return;
+                        }
+                        
+                        // Display results
+                        displayResults(response);
+                        
+                        // Show result section
+                        $('#resultSection').show();
+                        
+                        // Smooth scroll to results
+                        $('html, body').animate({
+                            scrollTop: $('#resultSection').offset().top - 100
+                        }, 500);
+                    },
+                    error: function(xhr, status, error) {
+                        $('#loadingOverlay').hide();
+                        alert('Error: ' + error);
+                    }
+                });
+            });
+        });
+
+        function displayResults(response) {
+            // Display best crop
+            const bestCropHtml = `
+                <div class="best-crop-label">Best Crop for Your Farm</div>
+                <div class="best-crop-name">${response.best_crop}</div>
+                <div class="best-crop-confidence">
+                    <i class="fas fa-check-circle me-2"></i>${response.best_confidence_percentage} Confidence
+                </div>
+            `;
+            $('#bestCrop').html(bestCropHtml);
+
+            // Display other recommendations
+            let recommendationsHtml = '';
+            response.recommendations.slice(1).forEach(function(rec) {
+                recommendationsHtml += `
+                    <div class="recommendation-card">
+                        <div class="recommendation-rank">Top Recommendation</div>
+                        <div class="recommendation-crop">${rec.crop}</div>
+                        <div class="confidence-bar">
+                            <div class="confidence-fill" style="width: ${rec.confidence * 100}%"></div>
+                        </div>
+                        <div class="confidence-text">
+                            <span>Match Score</span>
+                            <span>${rec.confidence_percentage}</span>
+                        </div>
+                    </div>
+                `;
+            });
+            $('#recommendationsGrid').html(recommendationsHtml);
+
+            // Display why this crop section for best crop
+            const reasons = getCropReasons(response.best_crop);
+            const whyCropHtml = `
+                <h5><i class="fas fa-question-circle me-2" style="color: var(--primary-green);"></i>Why ${response.best_crop}?</h5>
+                <ul class="reasons-list">
+                    ${reasons.map(reason => `<li>${reason}</li>`).join('')}
+                </ul>
+            `;
+            $('#whyThisCrop').html(whyCropHtml);
+
+            // Display input summary
+            const summaryHtml = `
+                <div class="summary-item">
+                    <div class="summary-label">Temperature</div>
+                    <div class="summary-value">${$('#temperature').val()}°C</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-label">Soil Type</div>
+                    <div class="summary-value">${$('#soil_type').val()}</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-label">Rainfall</div>
+                    <div class="summary-value">${$('#rainfall_category').val()}</div>
+                </div>
+            `;
+            $('#inputSummary').html(summaryHtml);
+        }
+
+        function getCropReasons(crop) {
+            // This would ideally come from your backend
+            const reasonsMap = {
+                'rice': [
+                    'Optimal temperature range for rice cultivation',
+                    'Soil conditions favor rice growth',
+                    'Adequate water requirements met',
+                    'High market demand in current season'
+                ],
+                'wheat': [
+                    'Ideal temperature for wheat germination',
+                    'Soil fertility matches wheat requirements',
+                    'Good drainage conditions',
+                    'Stable market prices expected'
+                ],
+                'maize': [
+                    'Perfect temperature for maize growth',
+                    'Soil type supports maize cultivation',
+                    'Moderate water needs satisfied',
+                    'Strong demand in local market'
+                ],
+                'cotton': [
+                    'Warm temperature ideal for cotton',
+                    'Well-draining soil conditions',
+                    'Moderate rainfall requirements met',
+                    'Good profitability expected'
+                ],
+                'sugarcane': [
+                    'Temperature suitable for sugarcane',
+                    'Soil rich in organic matter',
+                    'Adequate water supply',
+                    'Long-term crop with stable returns'
+                ],
+                'groundnut': [
+                    'Optimal soil temperature',
+                    'Well-drained sandy soil ideal',
+                    'Moderate rainfall sufficient',
+                    'Good rotation crop'
+                ]
+            };
+            
+            // Default reasons
+            return reasonsMap[crop.toLowerCase()] || [
+                'Optimal growing conditions based on your inputs',
+                'Suitable for current climate patterns',
+                'Strong market demand expected',
+                'Good profitability potential'
+            ];
+        }
+
+        function resetForm() {
+            $('#resultSection').hide();
+            $('#temperature').val('25');
+            $('#soil_type').val('Medium Fertility');
+            $('#rainfall_category').val('Medium');
+        }
+    </script>
+</body>
+</html>

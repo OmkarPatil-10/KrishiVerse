@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Test</title>
+</head>
+<body>
+    <h1>API Test Page</h1>
+    
+    <div>
+        <h3>Test Connection</h3>
+        <button onclick="testConnection()">Test Connection</button>
+        <pre id="result1"></pre>
+    </div>
+    
+    <div>
+        <h3>Crop Recommendation</h3>
+        <button onclick="testCrop()">Get Crop</button>
+        <pre id="result2"></pre>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:5000'; // Change this to your IP
+        const API_KEY = 'agri_8BzZERoE4ozpReGohEnS2t1JCFy98m52dgtGamXKF_g';
+        
+        async function testConnection() {
+            try {
+                const res = await fetch(`${API_URL}/api/v1/test`, {
+                    headers: { 'X-API-Key': API_KEY }
+                });
+                const data = await res.json();
+                document.getElementById('result1').textContent = 
+                    JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('result1').textContent = 
+                    'Error: ' + error.message;
+            }
+        }
+        
+        async function testCrop() {
+            try {
+                const res = await fetch(`${API_URL}/api/v1/predict-crop`, {
+                    method: 'POST',
+                    headers: {
+                        'X-API-Key': API_KEY,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        temperature: 28,
+                        soil_type: 'Medium Fertility',
+                        rainfall_category: 'Medium'
+                    })
+                });
+                const data = await res.json();
+                document.getElementById('result2').textContent = 
+                    JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('result2').textContent = 
+                    'Error: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>

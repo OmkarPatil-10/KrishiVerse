@@ -1,0 +1,9 @@
+API Key for Vaibhav
+Generated: 2026-02-19 11:45:51
+Expires: 2027-02-19
+
+API Key: agri_8BzZERoE4ozpReGohEnS2t1JCFy98m52dgtGamXKF_g
+
+ENDPOINTS:
+- Crop: POST http://your-server-ip:5000/api/v1/predict-crop
+- Price: POST http://your-server-ip:5000/api/v1/predict-price

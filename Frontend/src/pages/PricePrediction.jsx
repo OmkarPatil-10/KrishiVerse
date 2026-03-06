@@ -1,89 +1,166 @@
-import { useState } from 'react';
-import { Bell, User, Sprout, Star, TrendingUp, Mountain, MapPin, Calendar } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Bell, User, Sprout, Star, TrendingUp, Mountain, MapPin, Calendar, Loader2, AlertCircle, Thermometer, Droplets, Layers } from 'lucide-react';
 import { useProfileSidebar } from '../context/ProfileSidebarContext';
+import { getReferenceData, getModelStats, getMarkets, getVarieties, predictPrice, predictCrop } from '../services/mlApi';
 
 const PricePrediction = () => {
     const { openSidebar, isOpen: isSidebarOpen } = useProfileSidebar();
     const [activeTab, setActiveTab] = useState('priceForecast');
-    const [location, setLocation] = useState({
-        state: 'Maharashtra',
-        district: 'Raigad',
-        pincode: '402107'
+
+    // ==================== PRICE FORECAST STATE ====================
+    const [priceForm, setPriceForm] = useState({
+        district: '',
+        market: '',
+        commodity: '',
+        variety: '',
+        grade: '',
+        month: new Date().getMonth() + 1,
     });
-    const [showResults, setShowResults] = useState(false);
+    const [refData, setRefData] = useState({
+        districts: [],
+        commodities: [],
+        markets: [],
+        varieties: [],
+        grades: [],
+    });
+    const [filteredMarkets, setFilteredMarkets] = useState([]);
+    const [filteredVarieties, setFilteredVarieties] = useState([]);
+    const [modelStats, setModelStats] = useState(null);
+    const [priceResult, setPriceResult] = useState(null);
+    const [priceLoading, setPriceLoading] = useState(false);
+    const [priceError, setPriceError] = useState('');
+    const [showPriceResults, setShowPriceResults] = useState(false);
 
-    // Mock crop prediction data
-    const cropPredictions = [
-        {
-            name: 'Wheat',
-            demand: 'High',
-            demandColor: 'text-black',
-            priceChange: '+13.7%',
-            priceChangeColor: 'bg-green-100 text-green-700',
-            currentPrice: 2150,
-            predictedPrice: 2380,
-            bestSellDate: '15 Mar 2025',
-            confidence: 89,
-            recommendation: 'Hold for 2 weeks'
-        },
-        {
-            name: 'Rice',
-            demand: 'Very High',
-            demandColor: 'text-black',
-            priceChange: '+7.8%',
-            priceChangeColor: 'bg-green-100 text-green-700',
-            currentPrice: 3200,
-            predictedPrice: 3450,
-            bestSellDate: '9 Mar 2025',
-            confidence: 89,
-            recommendation: 'Sell in 1 week'
-        },
-        {
-            name: 'Corn',
-            demand: 'Medium',
-            demandColor: 'text-orange-600',
-            priceChange: '+3.0%',
-            priceChangeColor: 'bg-orange-100 text-orange-700',
-            currentPrice: 1850,
-            predictedPrice: 1920,
-            bestSellDate: '01 Mar 2025',
-            confidence: 82,
-            recommendation: 'Sell now'
-        },
-        {
-            name: 'Soybean',
-            demand: 'Low',
-            demandColor: 'text-red-600',
-            priceChange: '-3.4%',
-            priceChangeColor: 'bg-red-100 text-red-700',
-            currentPrice: 4200,
-            predictedPrice: 4050,
-            bestSellDate: 'Today',
-            confidence: 70,
-            recommendation: 'Sell immediately'
-        },
-        {
-            name: 'Cotton',
-            demand: 'High',
-            demandColor: 'text-black',
-            priceChange: '+5.2%',
-            priceChangeColor: 'bg-green-100 text-green-700',
-            currentPrice: 5800,
-            predictedPrice: 6100,
-            bestSellDate: '20 Mar 2025',
-            confidence: 91,
-            recommendation: 'Hold for 3 weeks'
+    // ==================== LAND ANALYSIS (CROP PREDICTION) STATE ====================
+    const [cropForm, setCropForm] = useState({
+        temperature: '',
+        soil_type: 'Medium Fertility',
+        rainfall_category: 'Medium',
+    });
+    const [cropResult, setCropResult] = useState(null);
+    const [cropLoading, setCropLoading] = useState(false);
+    const [cropError, setCropError] = useState('');
+    const [showCropResults, setShowCropResults] = useState(false);
+
+    // ==================== LOAD REFERENCE DATA ON MOUNT ====================
+    useEffect(() => {
+        const fetchRefData = async () => {
+            try {
+                const res = await getReferenceData();
+                if (res.success) {
+                    setRefData(res.data);
+                }
+            } catch (err) {
+                console.error('Failed to load reference data:', err);
+            }
+        };
+        const fetchModelStats = async () => {
+            try {
+                const stats = await getModelStats();
+                setModelStats(stats);
+            } catch (err) {
+                console.error('Failed to load model stats:', err);
+            }
+        };
+        fetchRefData();
+        fetchModelStats();
+    }, []);
+
+    // ==================== AUTO-FETCH MARKETS WHEN DISTRICT CHANGES ====================
+    useEffect(() => {
+        if (!priceForm.district) {
+            setFilteredMarkets([]);
+            return;
         }
-    ];
+        const fetchMarkets = async () => {
+            try {
+                const res = await getMarkets(priceForm.district);
+                setFilteredMarkets(res.markets || []);
+                // Reset market selection when district changes
+                setPriceForm((prev) => ({ ...prev, market: '' }));
+            } catch (err) {
+                console.error('Failed to load markets:', err);
+                setFilteredMarkets([]);
+            }
+        };
+        fetchMarkets();
+    }, [priceForm.district]);
 
-    const handleGetForecast = (e) => {
+    // ==================== AUTO-FETCH VARIETIES WHEN COMMODITY CHANGES ====================
+    useEffect(() => {
+        if (!priceForm.commodity) {
+            setFilteredVarieties([]);
+            return;
+        }
+        const fetchVarieties = async () => {
+            try {
+                const res = await getVarieties(priceForm.commodity);
+                setFilteredVarieties(res.varieties || []);
+                // Reset variety selection when commodity changes
+                setPriceForm((prev) => ({ ...prev, variety: '' }));
+            } catch (err) {
+                console.error('Failed to load varieties:', err);
+                setFilteredVarieties([]);
+            }
+        };
+        fetchVarieties();
+    }, [priceForm.commodity]);
+
+    // ==================== HANDLERS ====================
+
+    const handlePriceSubmit = async (e) => {
         e.preventDefault();
-        setShowResults(true);
+        setPriceLoading(true);
+        setPriceError('');
+        try {
+            const result = await predictPrice(priceForm);
+            if (result.error) {
+                setPriceError(result.error);
+            } else {
+                setPriceResult(result);
+                setShowPriceResults(true);
+            }
+        } catch (err) {
+            setPriceError(err.response?.data?.error || 'Failed to get price prediction. Make sure the Flask server is running.');
+        } finally {
+            setPriceLoading(false);
+        }
     };
 
-    const handleChangeLocation = () => {
-        setShowResults(false);
+    const handleCropSubmit = async (e) => {
+        e.preventDefault();
+        setCropLoading(true);
+        setCropError('');
+        try {
+            const result = await predictCrop(cropForm);
+            if (result.error) {
+                setCropError(result.error);
+            } else {
+                setCropResult(result);
+                setShowCropResults(true);
+            }
+        } catch (err) {
+            setCropError(err.response?.data?.error || 'Failed to get crop recommendation. Make sure the Flask server is running.');
+        } finally {
+            setCropLoading(false);
+        }
     };
+
+    const handlePriceChangeLocation = () => {
+        setShowPriceResults(false);
+        setPriceResult(null);
+        setPriceError('');
+    };
+
+    const handleCropChangeParams = () => {
+        setShowCropResults(false);
+        setCropResult(null);
+        setCropError('');
+    };
+
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+    // ==================== RENDER ====================
 
     return (
         <div className="min-h-screen bg-gray-50 pb-20 md:pb-6">
@@ -126,8 +203,15 @@ const PricePrediction = () => {
                             <p className="text-sm opacity-90">Based on 10+ years of agricultural data</p>
                         </div>
                         <div className="text-right">
-                            <p className="text-4xl font-bold">89%</p>
-                            <p className="text-sm opacity-90">Accuracy Rate</p>
+                            <p className="text-4xl font-bold">
+                                {activeTab === 'priceForecast'
+                                    ? modelStats?.price_r2 ? `${(modelStats.price_r2 * 100).toFixed(0)}%` : '—'
+                                    : modelStats?.recommendation_accuracy ? `${(modelStats.recommendation_accuracy * 100).toFixed(0)}%` : '—'
+                                }
+                            </p>
+                            <p className="text-sm opacity-90">
+                                {activeTab === 'priceForecast' ? 'R² Accuracy' : 'Model Accuracy'}
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -136,181 +220,467 @@ const PricePrediction = () => {
                 <div className="flex gap-2 mb-4 bg-white rounded-xl p-1 shadow-sm">
                     <button
                         onClick={() => setActiveTab('priceForecast')}
-                        className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg transition-colors ${
-                            activeTab === 'priceForecast'
-                                ? 'bg-primary text-white'
-                                : 'text-gray-600 hover:bg-gray-50'
-                        }`}
+                        className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg transition-colors ${activeTab === 'priceForecast'
+                            ? 'bg-primary text-white'
+                            : 'text-gray-600 hover:bg-gray-50'
+                            }`}
                     >
                         <TrendingUp className="w-5 h-5" />
                         <span className="font-medium">Price Forecast</span>
                     </button>
                     <button
                         onClick={() => setActiveTab('landAnalysis')}
-                        className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg transition-colors ${
-                            activeTab === 'landAnalysis'
-                                ? 'bg-primary text-white'
-                                : 'text-gray-600 hover:bg-gray-50'
-                        }`}
+                        className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg transition-colors ${activeTab === 'landAnalysis'
+                            ? 'bg-primary text-white'
+                            : 'text-gray-600 hover:bg-gray-50'
+                            }`}
                     >
                         <Mountain className="w-5 h-5" />
                         <span className="font-medium">Land Analysis</span>
                     </button>
                 </div>
 
-                {!showResults ? (
-                    /* Initial Form Screen */
-                    <div className="bg-white rounded-xl shadow-sm p-4 md:p-6">
-                        <div className="flex flex-col items-center mb-6">
-                            <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mb-4">
-                                <MapPin className="w-8 h-8 text-primary" />
-                            </div>
-                            <h2 className="text-xl font-bold text-gray-900 mb-2">Enter Your Location</h2>
-                            <p className="text-sm text-gray-600 text-center">
-                                Get crop prices and forecasts specific to your region
-                            </p>
-                        </div>
-
-                        <form onSubmit={handleGetForecast} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    State *
-                                </label>
-                                <select
-                                    value={location.state}
-                                    onChange={(e) => setLocation({ ...location, state: e.target.value })}
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                                    required
-                                >
-                                    <option value="Maharashtra">Maharashtra</option>
-                                    <option value="Karnataka">Karnataka</option>
-                                    <option value="Gujarat">Gujarat</option>
-                                    <option value="Punjab">Punjab</option>
-                                    <option value="Haryana">Haryana</option>
-                                    <option value="Tamil Nadu">Tamil Nadu</option>
-                                    <option value="Uttar Pradesh">Uttar Pradesh</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    District *
-                                </label>
-                                <input
-                                    type="text"
-                                    value={location.district}
-                                    onChange={(e) => setLocation({ ...location, district: e.target.value })}
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                                    placeholder="Enter district"
-                            required
-                        />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Pincode *
-                                </label>
-                                <input
-                                    type="text"
-                                    value={location.pincode}
-                                    onChange={(e) => setLocation({ ...location, pincode: e.target.value })}
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                                    placeholder="Enter pincode"
-                            required
-                        />
-                            </div>
-
-                            <button
-                                type="submit"
-                                className="w-full bg-primary text-white py-4 px-6 rounded-lg font-semibold text-lg hover:bg-green-700 transition-colors mt-6"
-                            >
-                                Get Price Forecast
-                            </button>
-                    </form>
-                    </div>
-                ) : (
-                    /* Results Screen */
-                    <div className="space-y-4">
-                        {/* Location Card */}
-                        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 shadow-sm">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <MapPin className="w-6 h-6 text-primary" />
-                                    <div>
-                                        <p className="font-semibold text-gray-900">
-                                            {location.district}, {location.state}
-                                        </p>
-                                        <p className="text-sm text-gray-600">Market prices updated today</p>
+                {/* ==================== PRICE FORECAST TAB ==================== */}
+                {activeTab === 'priceForecast' && (
+                    <>
+                        {!showPriceResults ? (
+                            <div className="bg-white rounded-xl shadow-sm p-4 md:p-6">
+                                <div className="flex flex-col items-center mb-6">
+                                    <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mb-4">
+                                        <TrendingUp className="w-8 h-8 text-primary" />
                                     </div>
+                                    <h2 className="text-xl font-bold text-gray-900 mb-2">Price Prediction</h2>
+                                    <p className="text-sm text-gray-600 text-center">
+                                        Select commodity and market details to get AI-powered price forecasts
+                                    </p>
                                 </div>
-                                <button
-                                    onClick={handleChangeLocation}
-                                    className="bg-white text-primary px-4 py-2 rounded-lg font-medium hover:bg-green-50 transition-colors"
-                                >
-                                    Change
-                                </button>
-                            </div>
-                        </div>
 
-                        {/* Crop Prediction Cards */}
-                        <div className="space-y-4">
-                            {cropPredictions.map((crop, index) => (
-                                <div key={index} className="bg-white rounded-xl shadow-sm p-4 md:p-6">
-                                    {/* Crop Header */}
-                                    <div className="flex items-start justify-between mb-4">
-                                        <div className="flex items-center gap-2">
-                                            <Sprout className="w-5 h-5 text-primary" />
+                                {priceError && (
+                                    <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700">
+                                        <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                                        <p className="text-sm">{priceError}</p>
+                                    </div>
+                                )}
+
+                                <form onSubmit={handlePriceSubmit} className="space-y-4">
+                                    {/* District */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">District *</label>
+                                        <select
+                                            value={priceForm.district}
+                                            onChange={(e) => setPriceForm({ ...priceForm, district: e.target.value })}
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                                            required
+                                        >
+                                            <option value="">Select District</option>
+                                            {refData.districts.map((d) => (
+                                                <option key={d} value={d}>{d}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {/* Market */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">Market *</label>
+                                        <select
+                                            value={priceForm.market}
+                                            onChange={(e) => setPriceForm({ ...priceForm, market: e.target.value })}
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                                            required
+                                            disabled={!priceForm.district}
+                                        >
+                                            <option value="">{priceForm.district ? 'Select Market' : 'Select a district first'}</option>
+                                            {filteredMarkets.map((m) => (
+                                                <option key={m} value={m}>{m}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {/* Commodity */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">Commodity *</label>
+                                        <select
+                                            value={priceForm.commodity}
+                                            onChange={(e) => setPriceForm({ ...priceForm, commodity: e.target.value })}
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                                            required
+                                        >
+                                            <option value="">Select Commodity</option>
+                                            {refData.commodities.map((c) => (
+                                                <option key={c} value={c}>{c}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {/* Variety */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">Variety *</label>
+                                        <select
+                                            value={priceForm.variety}
+                                            onChange={(e) => setPriceForm({ ...priceForm, variety: e.target.value })}
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                                            required
+                                            disabled={!priceForm.commodity}
+                                        >
+                                            <option value="">{priceForm.commodity ? 'Select Variety' : 'Select a commodity first'}</option>
+                                            {filteredVarieties.map((v) => (
+                                                <option key={v} value={v}>{v}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {/* Grade */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">Grade *</label>
+                                        <select
+                                            value={priceForm.grade}
+                                            onChange={(e) => setPriceForm({ ...priceForm, grade: e.target.value })}
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                                            required
+                                        >
+                                            <option value="">Select Grade</option>
+                                            {refData.grades.map((g) => (
+                                                <option key={g} value={g}>{g}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {/* Month */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">Month *</label>
+                                        <select
+                                            value={priceForm.month}
+                                            onChange={(e) => setPriceForm({ ...priceForm, month: parseInt(e.target.value) })}
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                                            required
+                                        >
+                                            {monthNames.map((name, idx) => (
+                                                <option key={idx + 1} value={idx + 1}>{name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    <button
+                                        type="submit"
+                                        disabled={priceLoading}
+                                        className="w-full bg-primary text-white py-4 px-6 rounded-lg font-semibold text-lg hover:bg-green-700 transition-colors mt-6 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                    >
+                                        {priceLoading ? (
+                                            <>
+                                                <Loader2 className="w-5 h-5 animate-spin" />
+                                                Predicting...
+                                            </>
+                                        ) : (
+                                            'Get Price Forecast'
+                                        )}
+                                    </button>
+                                </form>
+                            </div>
+                        ) : (
+                            /* Price Results */
+                            <div className="space-y-4">
+                                {/* Header Card */}
+                                <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 shadow-sm">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <MapPin className="w-6 h-6 text-primary" />
                                             <div>
-                                                <h3 className="text-lg font-bold text-gray-900">{crop.name}</h3>
-                                                <p className="text-sm">
-                                                    Demand:{' '}
-                                                    <span className={`font-semibold ${crop.demandColor}`}>
-                                                        {crop.demand}
-                                                    </span>
+                                                <p className="font-semibold text-gray-900">
+                                                    {priceForm.commodity} — {priceForm.market}, {priceForm.district}
+                                                </p>
+                                                <p className="text-sm text-gray-600">
+                                                    {priceForm.variety} • {priceForm.grade} • {monthNames[priceForm.month - 1]}
                                                 </p>
                                             </div>
                                         </div>
-                                        <span className={`px-3 py-1 rounded-full text-sm font-semibold ${crop.priceChangeColor}`}>
-                                            {crop.priceChange}
-                                        </span>
-                                    </div>
-
-                                    {/* Price Information */}
-                                    <div className="grid grid-cols-2 gap-4 mb-4">
-                                        <div>
-                                            <p className="text-xs text-gray-500 mb-1">Current Price</p>
-                                            <p className="text-2xl font-bold text-gray-900">₹{crop.currentPrice}</p>
-                                            <p className="text-xs text-gray-500">per quintal</p>
-                                        </div>
-                                        <div className="bg-green-50 rounded-lg p-3">
-                                            <p className="text-xs text-primary font-medium mb-1">Predicted Price</p>
-                                            <p className="text-2xl font-bold text-primary">₹{crop.predictedPrice}</p>
-                                            <p className="text-xs text-gray-600">per quintal</p>
-                                        </div>
-                                    </div>
-
-                                    {/* Best Sell Date & Confidence */}
-                                    <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-100">
-                                        <div className="flex items-center gap-2">
-                                            <Calendar className="w-4 h-4 text-gray-500" />
-                                            <span className="text-sm text-gray-700">
-                                                Best Sell Date: <span className="font-semibold">{crop.bestSellDate}</span>
-                                            </span>
-                                        </div>
-                                        <span className="text-sm font-semibold text-gray-700">
-                                            {crop.confidence}% confidence
-                                        </span>
-                                    </div>
-
-                                    {/* AI Recommendation */}
-                                    <div className="bg-blue-50 rounded-lg p-3">
-                                        <p className="text-xs text-blue-700 font-medium mb-1">AI Recommendation</p>
-                                        <p className="text-sm font-bold text-blue-900">{crop.recommendation}</p>
+                                        <button
+                                            onClick={handlePriceChangeLocation}
+                                            className="bg-white text-primary px-4 py-2 rounded-lg font-medium hover:bg-green-50 transition-colors"
+                                        >
+                                            Change
+                                        </button>
                                     </div>
                                 </div>
-                            ))}
-                        </div>
-                    </div>
+
+                                {priceResult && (
+                                    <>
+                                        {/* Main Price Card */}
+                                        <div className="bg-white rounded-xl shadow-sm p-4 md:p-6">
+                                            <div className="flex items-center gap-2 mb-4">
+                                                <TrendingUp className="w-5 h-5 text-primary" />
+                                                <h3 className="text-lg font-bold text-gray-900">Predicted Price</h3>
+                                                <span className={`ml-auto px-3 py-1 rounded-full text-sm font-semibold ${priceResult.confidence === 'Very High' || priceResult.confidence === 'High'
+                                                    ? 'bg-green-100 text-green-700'
+                                                    : priceResult.confidence === 'Medium'
+                                                        ? 'bg-yellow-100 text-yellow-700'
+                                                        : 'bg-red-100 text-red-700'
+                                                    }`}>
+                                                    {priceResult.confidence} Confidence
+                                                </span>
+                                            </div>
+
+                                            <div className="grid grid-cols-3 gap-4 mb-4">
+                                                <div className="bg-gray-50 rounded-lg p-3 text-center">
+                                                    <p className="text-xs text-gray-500 mb-1">Min Price</p>
+                                                    <p className="text-xl font-bold text-gray-700">₹{priceResult.min_price}</p>
+                                                    <p className="text-xs text-gray-500">per quintal</p>
+                                                </div>
+                                                <div className="bg-green-50 rounded-lg p-3 text-center border-2 border-green-200">
+                                                    <p className="text-xs text-primary font-medium mb-1">Predicted</p>
+                                                    <p className="text-2xl font-bold text-primary">₹{priceResult.predicted_price}</p>
+                                                    <p className="text-xs text-gray-600">per quintal</p>
+                                                </div>
+                                                <div className="bg-gray-50 rounded-lg p-3 text-center">
+                                                    <p className="text-xs text-gray-500 mb-1">Max Price</p>
+                                                    <p className="text-xl font-bold text-gray-700">₹{priceResult.max_price}</p>
+                                                    <p className="text-xs text-gray-500">per quintal</p>
+                                                </div>
+                                            </div>
+
+                                            {/* Model Info */}
+                                            {priceResult.model_info && (
+                                                <div className="bg-blue-50 rounded-lg p-3">
+                                                    <p className="text-xs text-blue-700 font-medium mb-1">Model Info</p>
+                                                    <p className="text-sm text-blue-900">
+                                                        {priceResult.model_info.name} — R² Score: {priceResult.model_info.r2_score} • MAE: ₹{priceResult.model_info.mae}
+                                                    </p>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Historical Prices */}
+                                        {priceResult.historical_prices && priceResult.historical_prices.length > 0 && (
+                                            <div className="bg-white rounded-xl shadow-sm p-4 md:p-6">
+                                                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                                                    <Calendar className="w-5 h-5 text-primary" />
+                                                    Historical Price Trend
+                                                </h3>
+                                                <div className="space-y-2">
+                                                    {priceResult.historical_prices.map((hp, idx) => (
+                                                        <div key={idx} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
+                                                            <span className="text-sm text-gray-600">{hp.month}</span>
+                                                            <div className="flex-1 mx-4">
+                                                                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                                                                    <div
+                                                                        className="h-full bg-primary rounded-full"
+                                                                        style={{ width: `${Math.min((hp.price / priceResult.predicted_price) * 100, 100)}%` }}
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                            <span className="text-sm font-semibold text-gray-900">₹{hp.price}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Market Factors */}
+                                        {priceResult.factors && priceResult.factors.length > 0 && (
+                                            <div className="bg-white rounded-xl shadow-sm p-4 md:p-6">
+                                                <h3 className="text-lg font-bold text-gray-900 mb-4">Market Factors</h3>
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    {priceResult.factors.map((factor, idx) => (
+                                                        <div key={idx} className="bg-gray-50 rounded-lg p-3">
+                                                            <p className="text-xs text-gray-500 mb-1">{factor.name}</p>
+                                                            <div className="flex items-center justify-between">
+                                                                <span className={`text-sm font-semibold ${factor.impact === 'Positive' ? 'text-green-600'
+                                                                    : factor.impact === 'Negative' ? 'text-red-600'
+                                                                        : 'text-yellow-600'
+                                                                    }`}>
+                                                                    {factor.impact}
+                                                                </span>
+                                                                <span className="text-sm font-bold text-gray-900">{factor.value}</span>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </>
+                                )}
+                            </div>
+                        )}
+                    </>
+                )}
+
+                {/* ==================== LAND ANALYSIS TAB ==================== */}
+                {activeTab === 'landAnalysis' && (
+                    <>
+                        {!showCropResults ? (
+                            <div className="bg-white rounded-xl shadow-sm p-4 md:p-6">
+                                <div className="flex flex-col items-center mb-6">
+                                    <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mb-4">
+                                        <Mountain className="w-8 h-8 text-primary" />
+                                    </div>
+                                    <h2 className="text-xl font-bold text-gray-900 mb-2">Land Analysis</h2>
+                                    <p className="text-sm text-gray-600 text-center">
+                                        Enter your land conditions to get AI-powered crop recommendations
+                                    </p>
+                                </div>
+
+                                {cropError && (
+                                    <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700">
+                                        <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                                        <p className="text-sm">{cropError}</p>
+                                    </div>
+                                )}
+
+                                <form onSubmit={handleCropSubmit} className="space-y-4">
+                                    {/* Temperature */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            <span className="flex items-center gap-1">
+                                                <Thermometer className="w-4 h-4" />
+                                                Temperature (°C) *
+                                            </span>
+                                        </label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            max="50"
+                                            step="0.1"
+                                            value={cropForm.temperature}
+                                            onChange={(e) => setCropForm({ ...cropForm, temperature: e.target.value })}
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                                            placeholder="Enter temperature (0-50°C)"
+                                            required
+                                        />
+                                    </div>
+
+                                    {/* Soil Type */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            <span className="flex items-center gap-1">
+                                                <Layers className="w-4 h-4" />
+                                                Soil Type *
+                                            </span>
+                                        </label>
+                                        <select
+                                            value={cropForm.soil_type}
+                                            onChange={(e) => setCropForm({ ...cropForm, soil_type: e.target.value })}
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                                            required
+                                        >
+                                            <option value="Low Fertility">Low Fertility</option>
+                                            <option value="Medium Fertility">Medium Fertility</option>
+                                            <option value="High Fertility">High Fertility</option>
+                                        </select>
+                                    </div>
+
+                                    {/* Rainfall Category */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            <span className="flex items-center gap-1">
+                                                <Droplets className="w-4 h-4" />
+                                                Rainfall Category *
+                                            </span>
+                                        </label>
+                                        <select
+                                            value={cropForm.rainfall_category}
+                                            onChange={(e) => setCropForm({ ...cropForm, rainfall_category: e.target.value })}
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                                            required
+                                        >
+                                            <option value="Low">Low</option>
+                                            <option value="Medium">Medium</option>
+                                            <option value="High">High</option>
+                                        </select>
+                                    </div>
+
+                                    <button
+                                        type="submit"
+                                        disabled={cropLoading}
+                                        className="w-full bg-primary text-white py-4 px-6 rounded-lg font-semibold text-lg hover:bg-green-700 transition-colors mt-6 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                    >
+                                        {cropLoading ? (
+                                            <>
+                                                <Loader2 className="w-5 h-5 animate-spin" />
+                                                Analyzing...
+                                            </>
+                                        ) : (
+                                            'Analyze My Land'
+                                        )}
+                                    </button>
+                                </form>
+                            </div>
+                        ) : (
+                            /* Crop Recommendation Results */
+                            <div className="space-y-4">
+                                {/* Input Summary Card */}
+                                <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 shadow-sm">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <Mountain className="w-6 h-6 text-primary" />
+                                            <div>
+                                                <p className="font-semibold text-gray-900">Land Conditions</p>
+                                                <p className="text-sm text-gray-600">
+                                                    {cropForm.temperature}°C • {cropForm.soil_type} • {cropForm.rainfall_category} Rainfall
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={handleCropChangeParams}
+                                            className="bg-white text-primary px-4 py-2 rounded-lg font-medium hover:bg-green-50 transition-colors"
+                                        >
+                                            Change
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {cropResult && (
+                                    <>
+                                        {/* Best Crop Card */}
+                                        <div className="bg-white rounded-xl shadow-sm p-4 md:p-6">
+                                            <div className="flex items-center gap-2 mb-4">
+                                                <Sprout className="w-5 h-5 text-primary" />
+                                                <h3 className="text-lg font-bold text-gray-900">Best Recommended Crop</h3>
+                                            </div>
+                                            <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-5 text-white text-center">
+                                                <p className="text-3xl font-bold mb-2">{cropResult.best_crop}</p>
+                                                <p className="text-lg opacity-90">
+                                                    Confidence: {cropResult.best_confidence_percentage}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        {/* Top Recommendations */}
+                                        {cropResult.recommendations && cropResult.recommendations.length > 0 && (
+                                            <div className="bg-white rounded-xl shadow-sm p-4 md:p-6">
+                                                <h3 className="text-lg font-bold text-gray-900 mb-4">Top 5 Recommendations</h3>
+                                                <div className="space-y-3">
+                                                    {cropResult.recommendations.map((rec, idx) => (
+                                                        <div key={idx} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm ${idx === 0 ? 'bg-green-500'
+                                                                : idx === 1 ? 'bg-green-400'
+                                                                    : idx === 2 ? 'bg-yellow-500'
+                                                                        : 'bg-gray-400'
+                                                                }`}>
+                                                                {idx + 1}
+                                                            </div>
+                                                            <div className="flex-1">
+                                                                <p className="font-semibold text-gray-900">{rec.crop}</p>
+                                                            </div>
+                                                            <div className="text-right">
+                                                                <p className="font-bold text-primary">{rec.confidence_percentage}</p>
+                                                            </div>
+                                                            <div className="flex-1 max-w-[120px]">
+                                                                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                                                                    <div
+                                                                        className="h-full bg-primary rounded-full transition-all"
+                                                                        style={{ width: `${rec.confidence * 100}%` }}
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </>
+                                )}
+                            </div>
+                        )}
+                    </>
                 )}
             </div>
         </div>
