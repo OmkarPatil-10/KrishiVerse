@@ -3,10 +3,27 @@ import { Bell, User, Sprout, Mail, Phone, MapPin, Building, Lock, Ruler, Clock, 
 import ProfileSidebar from '../components/ProfileSidebar';
 import { useProfileSidebar } from '../context/ProfileSidebarContext';
 import { useAuth } from '../context/AuthContext';
-
+import { ConnectWallet, useAddress, useDisconnect } from '@thirdweb-dev/react';
 const Profile = () => {
     const { openSidebar, isOpen: isSidebarOpen } = useProfileSidebar();
     const { user, updateProfile } = useAuth();
+    const address = useAddress();
+    const disconnect = useDisconnect();
+
+    useEffect(() => {
+        if (address && user) {
+            if (user.walletAddress && address.toLowerCase() !== user.walletAddress.toLowerCase()) {
+                alert("You cannot change your linked wallet address. Please connect your registered wallet: " + user.walletAddress);
+                disconnect();
+            } else if (!user.walletAddress) {
+                // Auto update user wallet address
+                updateProfile({ walletAddress: address }).catch(err => {
+                    console.error("Failed to update wallet address", err);
+                });
+            }
+        }
+    }, [address, user, disconnect, updateProfile]);
+
     // Buyer and contractor are the same entity
     const userRole = user?.role || user?.userType;
     const isContractor = userRole === 'contractor' || userRole === 'buyer';
@@ -249,6 +266,9 @@ const Profile = () => {
                                     <p className="text-lg opacity-90 mb-4 capitalize">
                                         {isContractor ? (user?.contractorType || 'Contractor') : (user?.role || 'User')}
                                     </p>
+                                    <div className="mb-4">
+                                        <ConnectWallet theme="dark" btnTitle="Connect Wallet" />
+                                    </div>
                                 </div>
                             </div>
                         </div>
