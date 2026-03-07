@@ -95,7 +95,8 @@ exports.register = async (req, res) => {
       phone: user.phone,
       location: user.location,
       farmSize: user.farmSize,
-      farmingExperience: user.farmingExperience
+      farmingExperience: user.farmingExperience,
+      walletAddress: user.walletAddress || ''
     };
 
     // Add contractor fields if contractor
@@ -169,7 +170,8 @@ exports.login = async (req, res) => {
       phone: user.phone,
       location: user.location,
       farmSize: user.farmSize,
-      farmingExperience: user.farmingExperience
+      farmingExperience: user.farmingExperience,
+      walletAddress: user.walletAddress || ''
     };
 
     // Add contractor fields if contractor
@@ -226,7 +228,8 @@ exports.getMe = async (req, res) => {
       phone: user.phone || '',
       location: user.location || '',
       farmSize: user.farmSize,
-      farmingExperience: user.farmingExperience
+      farmingExperience: user.farmingExperience,
+      walletAddress: user.walletAddress || ''
     };
 
     // Add contractor fields if contractor
@@ -281,13 +284,23 @@ exports.updateProfile = async (req, res) => {
       'businessName', 'contractorType', 'contractorExperience', 
       'state', 'district', 'city', 'fullAddress',
       'cropsInterested', 'minQuantityRequired', 'maxQuantityCapacity',
-      'preferredQualityGrade', 'gstNumber', 'panNumber', 'businessLicense'
+      'preferredQualityGrade', 'gstNumber', 'panNumber', 'businessLicense',
+      'walletAddress' // Add walletAddress to allowed fields
     ];
+
+    let walletError = null;
 
     // Only update allowed fields
     allowedFields.forEach(field => {
       if (updateData[field] !== undefined) {
-        if (field === 'farmSize' || field === 'farmingExperience' || 
+        if (field === 'walletAddress') {
+          // If the payload contains a wallet address
+          if (user.walletAddress && user.walletAddress !== updateData.walletAddress) {
+            walletError = 'Wallet address cannot be changed once set';
+          } else {
+            user.walletAddress = updateData.walletAddress;
+          }
+        } else if (field === 'farmSize' || field === 'farmingExperience' || 
             field === 'contractorExperience' || field === 'minQuantityRequired' || 
             field === 'maxQuantityCapacity') {
           user[field] = updateData[field] ? parseFloat(updateData[field]) : null;
@@ -298,6 +311,13 @@ exports.updateProfile = async (req, res) => {
         }
       }
     });
+
+    if (walletError) {
+      return res.status(400).json({
+        success: false,
+        message: walletError
+      });
+    }
 
     await user.save();
 
@@ -311,7 +331,8 @@ exports.updateProfile = async (req, res) => {
       phone: user.phone || '',
       location: user.location || '',
       farmSize: user.farmSize,
-      farmingExperience: user.farmingExperience
+      farmingExperience: user.farmingExperience,
+      walletAddress: user.walletAddress || ''
     };
 
     // Add contractor fields if contractor

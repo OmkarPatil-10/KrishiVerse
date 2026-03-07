@@ -118,11 +118,11 @@ const Signup = () => {
         submitData.district = formData.district;
         submitData.city = formData.city;
         submitData.fullAddress = formData.fullAddress;
-        
-        // Add wallet address if connected
-        if (address) {
-          submitData.walletAddress = address;
-        }
+      }
+      
+      // Add wallet address if connected
+      if (address) {
+        submitData.walletAddress = address;
       }
 
       await signup(submitData);
@@ -441,7 +441,7 @@ const Signup = () => {
                 />
               </div>
             )}
-            {formData.role === "contractor" && <ConnectWallet />}
+            <ConnectWallet />
             <Button
               type="submit"
               className="w-full bg-primary text-white py-3 text-lg font-semibold"
