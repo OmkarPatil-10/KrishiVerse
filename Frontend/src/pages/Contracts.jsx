@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bell, User, Sprout, FileText, CheckCircle2 } from 'lucide-react';
 import { useProfileSidebar } from '../context/ProfileSidebarContext';
+import CreateContractForm from '../components/CreateContractForm';
 
 const Contracts = () => {
     const navigate = useNavigate();
     const { openSidebar, isOpen: isSidebarOpen } = useProfileSidebar();
+    const [showCreateForm, setShowCreateForm] = useState(false);
 
     // Mock contract data
     const contracts = [
@@ -64,6 +66,11 @@ const Contracts = () => {
 
     return (
         <div className="min-h-screen bg-gray-50 pb-20 md:pb-6">
+            {/* Create Contract Form Popup */}
+            {showCreateForm && (
+                <CreateContractForm onClose={() => setShowCreateForm(false)} />
+            )}
+
             {/* Top Header Section */}
             <div className="bg-white shadow-sm sticky top-0 z-10 md:relative md:shadow-none">
                 <div className="px-4 py-3 md:px-6 md:py-4">
@@ -85,7 +92,10 @@ const Contracts = () => {
                     </div>
                     <div className="flex items-center justify-between">
                         <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Smart Contracts</h1>
-                        <button className="text-primary text-sm font-medium hover:text-green-700 transition-colors">
+                        <button
+                            onClick={() => setShowCreateForm(true)}
+                            className="text-primary text-sm font-medium hover:text-green-700 transition-colors"
+                        >
                             + New Contract
                         </button>
                     </div>
