@@ -17,6 +17,9 @@ import {
   Briefcase,
   MapPin as MapPinIcon,
 } from "lucide-react";
+import { ConnectWallet, useAddress } from "@thirdweb-dev/react";
+
+
 
 const Signup = () => {
   const [formData, setFormData] = useState({
@@ -44,6 +47,7 @@ const Signup = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { signup } = useAuth();
   const navigate = useNavigate();
+  const address = useAddress();
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -114,6 +118,11 @@ const Signup = () => {
         submitData.district = formData.district;
         submitData.city = formData.city;
         submitData.fullAddress = formData.fullAddress;
+        
+        // Add wallet address if connected
+        if (address) {
+          submitData.walletAddress = address;
+        }
       }
 
       await signup(submitData);
@@ -432,13 +441,14 @@ const Signup = () => {
                 />
               </div>
             )}
-
+            {formData.role === "contractor" && <ConnectWallet />}
             <Button
               type="submit"
               className="w-full bg-primary text-white py-3 text-lg font-semibold"
             >
               Create Account
             </Button>
+            
           </form>
 
           <div className="mt-6 text-center text-sm text-gray-600">
