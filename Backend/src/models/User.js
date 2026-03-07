@@ -102,6 +102,10 @@ const UserSchema = new mongoose.Schema({
     type: String, // URL or file path
     default: ''
   },
+  walletAddress: {
+    type: String,
+    default: ''
+  },
   createdAt: {
     type: Date,
     default: Date.now

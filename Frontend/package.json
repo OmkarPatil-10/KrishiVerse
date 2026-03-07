@@ -10,9 +10,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@thirdweb-dev/react": "^4.9.4",
+    "@thirdweb-dev/sdk": "^4.0.99",
     "axios": "^1.13.4",
     "chart.js": "^4.5.1",
     "clsx": "^2.1.1",
+    "ethers": "^5.8.0",
     "i18next": "^25.8.0",
     "lucide-react": "^0.563.0",
     "prop-types": "^15.8.1",

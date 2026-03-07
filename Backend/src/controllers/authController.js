@@ -9,7 +9,7 @@ exports.register = async (req, res) => {
     
     // Map 'role' from frontend to 'userType' for backend
     const { name, email, password, role, userType, phone, location, farmSize, farmingExperience, confirmPassword,
-            businessName, contractorType, contractorExperience, state, district, city, fullAddress } = req.body;
+            businessName, contractorType, contractorExperience, state, district, city, fullAddress, walletAddress } = req.body;
     const mappedUserType = userType || role; // Use userType if provided, otherwise use role
     
     // Validate password confirmation
@@ -69,6 +69,9 @@ exports.register = async (req, res) => {
       userData.district = district;
       userData.city = city;
       userData.fullAddress = fullAddress;
+      if (walletAddress) {
+        userData.walletAddress = walletAddress;
+      }
     }
 
     const user = new User(userData);
