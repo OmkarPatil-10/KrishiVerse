@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { ArrowLeft, Plus } from 'lucide-react';
 
-const CreateContractForm = ({ onClose }) => {
+const CreateContractForm = ({ onClose, initialFarmer = '' }) => {
     const [formData, setFormData] = useState({
-        farmer: '',
+        farmer: initialFarmer,
         cropType: '',
         quantity: '',
         pricePerTon: '',
@@ -26,36 +26,26 @@ const CreateContractForm = ({ onClose }) => {
     };
 
     const inputClass =
-        'w-full px-4 py-2.5 bg-white border border-gray-200 rounded-full text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-transparent transition-all';
+        'w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm';
 
     return (
         /* Overlay — full-screen on mobile, centered backdrop on md+ */
-        <div className="fixed inset-0 z-50 flex items-start md:items-center justify-center md:bg-black/40 md:backdrop-blur-sm">
-            {/* Backdrop click to close — only on md+ */}
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+            {/* Backdrop click to close */}
             <div
-                className="hidden md:block fixed inset-0"
+                className="fixed inset-0"
                 onClick={onClose}
             />
 
             {/* Form container */}
-            <div className="relative z-10 w-full h-full md:h-auto md:max-w-lg lg:max-w-xl md:mx-4 bg-gray-50 md:bg-white md:rounded-2xl md:shadow-2xl overflow-y-auto md:max-h-[90vh]">
-                {/* Header */}
-                <div className="sticky top-0 z-20 bg-white border-b border-gray-100 px-4 py-3 md:px-6 md:py-4 flex items-center gap-3">
-                    <button
-                        onClick={onClose}
-                        className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
-                    >
-                        <ArrowLeft className="w-5 h-5 text-gray-700" />
-                    </button>
-                    <h2 className="text-lg md:text-xl font-bold text-gray-900">Create new contract</h2>
-                </div>
+            <div className="relative z-10 w-full max-w-sm bg-white rounded-[32px] overflow-hidden border-2 border-blue-400 shadow-2xl animate-in fade-in zoom-in duration-200">
 
-                {/* Form body */}
-                <form onSubmit={handleSubmit} className="px-4 py-5 md:px-6 md:py-6">
-                    <div className="bg-blue-50/70 rounded-2xl p-5 md:p-6 space-y-4">
+                {/* Scrollable Form Body */}
+                <div className="max-h-[90vh] overflow-y-auto px-6 py-8">
+                    <form onSubmit={handleSubmit} className="space-y-5">
                         {/* Select Farmer */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1.5">Select Farmer</label>
+                            <label className="block text-sm font-semibold text-gray-800 mb-2">Select Farmer</label>
                             <input
                                 type="text"
                                 name="farmer"
@@ -68,7 +58,7 @@ const CreateContractForm = ({ onClose }) => {
 
                         {/* Crop Type */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1.5">Crop Type</label>
+                            <label className="block text-sm font-semibold text-gray-800 mb-2">Crop Type</label>
                             <input
                                 type="text"
                                 name="cropType"
@@ -80,9 +70,9 @@ const CreateContractForm = ({ onClose }) => {
                         </div>
 
                         {/* Quantity + Price — side by side */}
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1.5">Quantity (Tons)</label>
+                                <label className="block text-sm font-semibold text-gray-800 mb-2">Quantity (Tons)</label>
                                 <input
                                     type="number"
                                     name="quantity"
@@ -93,7 +83,7 @@ const CreateContractForm = ({ onClose }) => {
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1.5">Price per Ton (₹)</label>
+                                <label className="block text-sm font-semibold text-gray-800 mb-2">Price per Ton (₹)</label>
                                 <input
                                     type="number"
                                     name="pricePerTon"
@@ -107,7 +97,7 @@ const CreateContractForm = ({ onClose }) => {
 
                         {/* Quality Grade */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1.5">Quality Grade</label>
+                            <label className="block text-sm font-semibold text-gray-800 mb-2">Quality Grade</label>
                             <input
                                 type="text"
                                 name="qualityGrade"
@@ -120,7 +110,7 @@ const CreateContractForm = ({ onClose }) => {
 
                         {/* Farming Method */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1.5">Farming Method</label>
+                            <label className="block text-sm font-semibold text-gray-800 mb-2">Farming Method</label>
                             <input
                                 type="text"
                                 name="farmingMethod"
@@ -132,9 +122,9 @@ const CreateContractForm = ({ onClose }) => {
                         </div>
 
                         {/* Start Date + End Date — side by side */}
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1.5">Start Date</label>
+                                <label className="block text-sm font-semibold text-gray-800 mb-2">Start Date</label>
                                 <input
                                     type="date"
                                     name="startDate"
@@ -144,7 +134,7 @@ const CreateContractForm = ({ onClose }) => {
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1.5">End Date</label>
+                                <label className="block text-sm font-semibold text-gray-800 mb-2">End Date</label>
                                 <input
                                     type="date"
                                     name="endDate"
@@ -157,7 +147,7 @@ const CreateContractForm = ({ onClose }) => {
 
                         {/* Delivery Date */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1.5">Delivery Date</label>
+                            <label className="block text-sm font-semibold text-gray-800 mb-2">Delivery Date</label>
                             <input
                                 type="date"
                                 name="deliveryDate"
@@ -166,17 +156,19 @@ const CreateContractForm = ({ onClose }) => {
                                 className={inputClass}
                             />
                         </div>
-                    </div>
 
-                    {/* Submit Button */}
-                    <button
-                        type="submit"
-                        className="mt-6 w-full flex items-center justify-center gap-2 bg-[#2196F3] hover:bg-[#1976D2] active:bg-[#1565C0] text-white font-semibold py-3.5 rounded-full shadow-lg shadow-blue-200 transition-all duration-200"
-                    >
-                        <Plus className="w-5 h-5" />
-                        Create Contract
-                    </button>
-                </form>
+                        {/* Submit Button */}
+                        <div className="pt-4">
+                            <button
+                                type="submit"
+                                className="w-full flex items-center justify-center gap-2 bg-[#2196F3] hover:bg-[#1E88E5] active:bg-[#1976D2] text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-200 transition-all duration-200 text-lg"
+                            >
+                                <Plus className="w-6 h-6 stroke-[3]" />
+                                Create Contract
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     );

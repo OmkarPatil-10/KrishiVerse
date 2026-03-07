@@ -14,6 +14,8 @@ const FarmersList = () => {
 
     const [farmers, setFarmers] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [viewMode, setViewMode] = useState('all'); // 'all' or 'added'
+    const [networkIds, setNetworkIds] = useState([]);
 
     useEffect(() => {
         const fetchFarmers = async () => {
@@ -111,7 +113,19 @@ const FarmersList = () => {
             setFarmers(mockFarmers.filter(f => f.walletConnected));
         };
 
+        const fetchNetwork = async () => {
+            try {
+                const response = await api.get('/users/network/my');
+                if (response.data.success) {
+                    setNetworkIds(response.data.data.map(f => f._id));
+                }
+            } catch (error) {
+                console.error("Error fetching network:", error);
+            }
+        };
+
         fetchFarmers();
+        fetchNetwork();
     }, []);
 
     const handleClearFilters = () => {
@@ -157,7 +171,14 @@ const FarmersList = () => {
                         <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1">Farmer</h1>
                         <p className="text-sm md:text-base text-gray-600">See all available farmer</p>
                     </div>
-                    <button className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                    <button
+                        onClick={() => setViewMode(viewMode === 'all' ? 'added' : 'all')}
+                        className={`${viewMode === 'added'
+                            ? 'bg-blue-600 shadow-md'
+                            : 'bg-blue-500 hover:bg-blue-600'
+                            } text-white px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2`}
+                    >
+                        {viewMode === 'added' && <CheckCircle2 className="w-4 h-4" />}
                         Added Farmer
                     </button>
                 </div>
@@ -219,12 +240,23 @@ const FarmersList = () => {
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {farmers
-                            .filter(f =>
-                                f.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                                f.location.toLowerCase().includes(searchQuery.toLowerCase())
-                            )
+                            .filter(f => {
+                                const matchesSearch = f.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                    f.location.toLowerCase().includes(searchQuery.toLowerCase());
+                                const isAdded = networkIds.includes(f.id);
+                                if (viewMode === 'added') return matchesSearch && isAdded;
+                                return matchesSearch;
+                            })
                             .map((farmer) => (
-                                <div key={farmer.id} className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
+                                <div key={farmer.id} className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 relative overflow-hidden">
+                                    {networkIds.includes(farmer.id) && (
+                                        <div className="absolute top-0 right-0">
+                                            <div className="bg-green-100 text-green-700 px-3 py-1 rounded-bl-xl text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
+                                                <CheckCircle2 className="w-3 h-3" />
+                                                Added
+                                            </div>
+                                        </div>
+                                    )}
                                     <div className="flex items-start gap-4">
                                         <div className="w-12 h-12 bg-green-50 rounded-full flex items-center justify-center flex-shrink-0 text-green-500">
                                             <User className="w-6 h-6" />

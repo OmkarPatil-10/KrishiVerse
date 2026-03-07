@@ -27,4 +27,51 @@ const getFarmerById = async (req, res) => {
     }
 };
 
-module.exports = { getConnectedFarmers, getFarmerById };
+// Add a farmer to contractor's network
+const addToNetwork = async (req, res) => {
+    try {
+        const contractorId = req.userId;
+        const { farmerId } = req.body;
+
+        if (!farmerId) {
+            return res.status(400).json({ success: false, message: 'Farmer ID is required' });
+        }
+
+        const contractor = await User.findById(contractorId);
+        if (!contractor) {
+            return res.status(404).json({ success: false, message: 'Contractor not found' });
+        }
+
+        if (contractor.myNetwork.includes(farmerId)) {
+            return res.status(200).json({ success: true, message: 'Farmer already in network' });
+        }
+
+        contractor.myNetwork.push(farmerId);
+        await contractor.save();
+
+        res.status(200).json({ success: true, message: 'Farmer added to network' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// Get contractor's network
+const getMyNetwork = async (req, res) => {
+    try {
+        const contractorId = req.userId;
+        const contractor = await User.findById(contractorId).populate({
+            path: 'myNetwork',
+            select: '-password'
+        });
+
+        if (!contractor) {
+            return res.status(404).json({ success: false, message: 'Contractor not found' });
+        }
+
+        res.status(200).json({ success: true, data: contractor.myNetwork });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+module.exports = { getConnectedFarmers, getFarmerById, addToNetwork, getMyNetwork };

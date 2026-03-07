@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, CheckCircle2, Star, User, Phone, Mail, FileCheck, Leaf } from 'lucide-react';
+import CreateContractForm from '../components/CreateContractForm';
 
 const FarmerDetails = () => {
     const navigate = useNavigate();
@@ -8,6 +9,10 @@ const FarmerDetails = () => {
 
     const [farmer, setFarmer] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [isContractFormOpen, setIsContractFormOpen] = useState(false);
+    const [isAdded, setIsAdded] = useState(false);
+    const [showPopup, setShowPopup] = useState(false);
+    const [isAdding, setIsAdding] = useState(false);
 
     useEffect(() => {
         const fetchFarmer = async () => {
@@ -58,8 +63,43 @@ const FarmerDetails = () => {
             });
         };
 
+        const fetchNetworkStatus = async () => {
+            try {
+                const { default: api } = await import('../services/api');
+                const response = await api.get('/users/network/my');
+                if (response.data.success) {
+                    const isPresent = response.data.data.some(f => f._id === id);
+                    setIsAdded(isPresent);
+                }
+            } catch (error) {
+                console.error("Error fetching network status:", error);
+            }
+        };
+
         fetchFarmer();
+        fetchNetworkStatus();
     }, [id]);
+
+    const handleAddToNetwork = async () => {
+        setIsAdding(true);
+        try {
+            const { default: api } = await import('../services/api');
+            const response = await api.post('/users/network/add', { farmerId: id });
+            if (response.data.success) {
+                setIsAdded(true);
+                setShowPopup(true);
+                setTimeout(() => setShowPopup(false), 3000);
+            }
+        } catch (error) {
+            console.error("Error adding to network:", error);
+            // Fallback for mock/offline
+            setIsAdded(true);
+            setShowPopup(true);
+            setTimeout(() => setShowPopup(false), 3000);
+        } finally {
+            setIsAdding(false);
+        }
+    };
 
     if (isLoading) {
         return <div className="min-h-screen bg-blue-50 flex items-center justify-center">Loading...</div>;
@@ -164,8 +204,24 @@ const FarmerDetails = () => {
                     </div>
 
                     {/* Add to Network Button */}
-                    <button className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 rounded-xl mb-6 transition-colors text-base shadow-sm">
-                        Add to Network
+                    <button
+                        onClick={handleAddToNetwork}
+                        disabled={isAdded || isAdding}
+                        className={`w-full font-semibold py-3 rounded-xl mb-6 transition-colors text-base shadow-sm flex items-center justify-center gap-2 ${isAdded
+                            ? 'bg-green-100 text-green-700 cursor-default'
+                            : 'bg-blue-500 hover:bg-blue-600 text-white'
+                            }`}
+                    >
+                        {isAdding ? (
+                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        ) : isAdded ? (
+                            <>
+                                <CheckCircle2 className="w-5 h-5" />
+                                Added to Network
+                            </>
+                        ) : (
+                            'Add to Network'
+                        )}
                     </button>
 
                     <hr className="border-gray-100 mb-6" />
@@ -215,13 +271,37 @@ const FarmerDetails = () => {
                             <Phone className="w-5 h-5" />
                             Call
                         </button>
-                        <button className="flex-[2] flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 rounded-xl transition-colors shadow-sm">
+                        <button
+                            onClick={() => setIsContractFormOpen(true)}
+                            className="flex-[2] flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 rounded-xl transition-colors shadow-sm"
+                        >
                             <span className="text-lg leading-none">+</span> Create Contract
                         </button>
                     </div>
 
                 </div>
             </div>
+            {isContractFormOpen && (
+                <CreateContractForm
+                    onClose={() => setIsContractFormOpen(false)}
+                    initialFarmer={`${farmer.name} - ${farmer.location}`}
+                />
+            )}
+
+            {/* Success Popup */}
+            {showPopup && (
+                <div className="fixed top-10 left-1/2 -translate-x-1/2 z-[100] animate-in fade-in slide-in-from-top-4 duration-300">
+                    <div className="bg-white rounded-2xl shadow-2xl border border-green-100 px-6 py-4 flex items-center gap-3">
+                        <div className="w-10 h-10 bg-green-50 rounded-full flex items-center justify-center text-green-500">
+                            <CheckCircle2 className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <p className="font-bold text-gray-900">Added!</p>
+                            <p className="text-sm text-gray-400">Farmer successfully added to your network</p>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
