@@ -25,6 +25,7 @@ const contractRoutes = require('./src/routes/contractRoutes');
 const weatherRoutes = require('./src/routes/weatherRoutes');
 const adminRoutes = require('./src/routes/adminRoutes');
 const userRoutes = require('./src/routes/userRoutes');
+const otpRoutes = require('./src/routes/otpRoutes');
 
 // ========== USE ALL ROUTES HERE ==========
 app.use('/api/auth', authRoutes);
@@ -33,6 +34,7 @@ app.use('/api/contracts', contractRoutes);
 app.use('/api/weather', weatherRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/otp', otpRoutes);
 
 // Test route
 app.get('/api/health', (req, res) => {
