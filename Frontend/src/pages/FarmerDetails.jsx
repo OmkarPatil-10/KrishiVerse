@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2, Star, User, Phone, Mail, FileCheck, Leaf } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Star, User, Phone, Mail, FileCheck, Leaf, UserMinus, AlertTriangle, X } from 'lucide-react';
 import CreateContractForm from '../components/CreateContractForm';
 
 const FarmerDetails = () => {
@@ -12,7 +12,10 @@ const FarmerDetails = () => {
     const [isContractFormOpen, setIsContractFormOpen] = useState(false);
     const [isAdded, setIsAdded] = useState(false);
     const [showPopup, setShowPopup] = useState(false);
+    const [popupType, setPopupType] = useState('added'); // 'added' or 'removed'
     const [isAdding, setIsAdding] = useState(false);
+    const [isRemoving, setIsRemoving] = useState(false);
+    const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
 
     useEffect(() => {
         const fetchFarmer = async () => {
@@ -87,6 +90,7 @@ const FarmerDetails = () => {
             const response = await api.post('/users/network/add', { farmerId: id });
             if (response.data.success) {
                 setIsAdded(true);
+                setPopupType('added');
                 setShowPopup(true);
                 setTimeout(() => setShowPopup(false), 3000);
             }
@@ -94,10 +98,36 @@ const FarmerDetails = () => {
             console.error("Error adding to network:", error);
             // Fallback for mock/offline
             setIsAdded(true);
+            setPopupType('added');
             setShowPopup(true);
             setTimeout(() => setShowPopup(false), 3000);
         } finally {
             setIsAdding(false);
+        }
+    };
+
+    const handleRemoveFromNetwork = async () => {
+        setIsRemoving(true);
+        try {
+            const { default: api } = await import('../services/api');
+            const response = await api.post('/users/network/remove', { farmerId: id });
+            if (response.data.success) {
+                setIsAdded(false);
+                setShowRemoveConfirm(false);
+                setPopupType('removed');
+                setShowPopup(true);
+                setTimeout(() => setShowPopup(false), 3000);
+            }
+        } catch (error) {
+            console.error("Error removing from network:", error);
+            // Fallback for mock/offline
+            setIsAdded(false);
+            setShowRemoveConfirm(false);
+            setPopupType('removed');
+            setShowPopup(true);
+            setTimeout(() => setShowPopup(false), 3000);
+        } finally {
+            setIsRemoving(false);
         }
     };
 
@@ -203,26 +233,34 @@ const FarmerDetails = () => {
                         </div>
                     </div>
 
-                    {/* Add to Network Button */}
-                    <button
-                        onClick={handleAddToNetwork}
-                        disabled={isAdded || isAdding}
-                        className={`w-full font-semibold py-3 rounded-xl mb-6 transition-colors text-base shadow-sm flex items-center justify-center gap-2 ${isAdded
-                            ? 'bg-green-100 text-green-700 cursor-default'
-                            : 'bg-blue-500 hover:bg-blue-600 text-white'
-                            }`}
-                    >
-                        {isAdding ? (
-                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        ) : isAdded ? (
-                            <>
+                    {/* Add / Remove Network Buttons */}
+                    {isAdded ? (
+                        <div className="flex gap-3 mb-6">
+                            <div className="flex-1 bg-green-50 border border-green-200 text-green-700 font-semibold py-3 rounded-xl flex items-center justify-center gap-2 text-base">
                                 <CheckCircle2 className="w-5 h-5" />
                                 Added to Network
-                            </>
-                        ) : (
-                            'Add to Network'
-                        )}
-                    </button>
+                            </div>
+                            <button
+                                onClick={() => setShowRemoveConfirm(true)}
+                                className="px-4 py-3 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 font-semibold rounded-xl transition-colors flex items-center gap-2 text-sm"
+                            >
+                                <UserMinus className="w-4 h-4" />
+                                Remove
+                            </button>
+                        </div>
+                    ) : (
+                        <button
+                            onClick={handleAddToNetwork}
+                            disabled={isAdding}
+                            className="w-full font-semibold py-3 rounded-xl mb-6 transition-colors text-base shadow-sm flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 text-white"
+                        >
+                            {isAdding ? (
+                                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                            ) : (
+                                'Add to Network'
+                            )}
+                        </button>
+                    )}
 
                     <hr className="border-gray-100 mb-6" />
 
@@ -288,20 +326,97 @@ const FarmerDetails = () => {
                 />
             )}
 
-            {/* Success Popup */}
+            {/* Success / Removed Popup */}
             {showPopup && (
-                <div className="fixed top-10 left-1/2 -translate-x-1/2 z-[100] animate-in fade-in slide-in-from-top-4 duration-300">
-                    <div className="bg-white rounded-2xl shadow-2xl border border-green-100 px-6 py-4 flex items-center gap-3">
-                        <div className="w-10 h-10 bg-green-50 rounded-full flex items-center justify-center text-green-500">
-                            <CheckCircle2 className="w-6 h-6" />
+                <div className="fixed top-10 left-1/2 -translate-x-1/2 z-[100]" style={{ animation: 'popupSlideIn 0.3s ease-out' }}>
+                    <div className={`rounded-2xl shadow-2xl border px-6 py-4 flex items-center gap-3 ${popupType === 'added'
+                            ? 'bg-white border-green-100'
+                            : 'bg-white border-red-100'
+                        }`}>
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${popupType === 'added'
+                                ? 'bg-green-50 text-green-500'
+                                : 'bg-red-50 text-red-500'
+                            }`}>
+                            {popupType === 'added' ? (
+                                <CheckCircle2 className="w-6 h-6" />
+                            ) : (
+                                <UserMinus className="w-6 h-6" />
+                            )}
                         </div>
                         <div>
-                            <p className="font-bold text-gray-900">Added!</p>
-                            <p className="text-sm text-gray-400">Farmer successfully added to your network</p>
+                            <p className="font-bold text-gray-900">
+                                {popupType === 'added' ? 'Added!' : 'Removed!'}
+                            </p>
+                            <p className="text-sm text-gray-400">
+                                {popupType === 'added'
+                                    ? 'Farmer successfully added to your network'
+                                    : 'Farmer permanently removed from your network'
+                                }
+                            </p>
                         </div>
                     </div>
                 </div>
             )}
+
+            {/* Remove Confirmation Modal */}
+            {showRemoveConfirm && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden" style={{ animation: 'popupSlideIn 0.3s ease-out' }}>
+                        {/* Header */}
+                        <div className="bg-red-50 p-5 flex flex-col items-center">
+                            <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mb-3">
+                                <AlertTriangle className="w-7 h-7 text-red-500" />
+                            </div>
+                            <h3 className="text-lg font-bold text-gray-900 text-center">Remove from Network?</h3>
+                        </div>
+
+                        {/* Body */}
+                        <div className="p-5">
+                            <p className="text-sm text-gray-600 text-center leading-relaxed">
+                                Are you sure you want to remove <strong className="text-gray-900">{farmer.name}</strong> from your network?
+                                This action is <strong className="text-red-600">permanent</strong> and cannot be undone.
+                            </p>
+
+                            <div className="flex gap-3 mt-5">
+                                <button
+                                    onClick={() => setShowRemoveConfirm(false)}
+                                    className="flex-1 py-2.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-colors text-sm"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleRemoveFromNetwork}
+                                    disabled={isRemoving}
+                                    className="flex-1 py-2.5 px-4 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-xl transition-colors text-sm flex items-center justify-center gap-2 disabled:opacity-60"
+                                >
+                                    {isRemoving ? (
+                                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                    ) : (
+                                        <>
+                                            <UserMinus className="w-4 h-4" />
+                                            Remove
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* CSS Animations */}
+            <style>{`
+                @keyframes popupSlideIn {
+                    from {
+                        opacity: 0;
+                        transform: translateY(-10px) scale(0.95);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateY(0) scale(1);
+                    }
+                }
+            `}</style>
         </div>
     );
 };

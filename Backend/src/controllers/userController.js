@@ -74,4 +74,34 @@ const getMyNetwork = async (req, res) => {
     }
 };
 
-module.exports = { getConnectedFarmers, getFarmerById, addToNetwork, getMyNetwork };
+// Remove a farmer from contractor's network (permanent)
+const removeFromNetwork = async (req, res) => {
+    try {
+        const contractorId = req.userId;
+        const { farmerId } = req.body;
+
+        if (!farmerId) {
+            return res.status(400).json({ success: false, message: 'Farmer ID is required' });
+        }
+
+        const contractor = await User.findById(contractorId);
+        if (!contractor) {
+            return res.status(404).json({ success: false, message: 'Contractor not found' });
+        }
+
+        if (!contractor.myNetwork.includes(farmerId)) {
+            return res.status(400).json({ success: false, message: 'Farmer is not in your network' });
+        }
+
+        // Permanently remove the farmer from the network using $pull
+        await User.findByIdAndUpdate(contractorId, {
+            $pull: { myNetwork: farmerId }
+        });
+
+        res.status(200).json({ success: true, message: 'Farmer removed from network permanently' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+module.exports = { getConnectedFarmers, getFarmerById, addToNetwork, getMyNetwork, removeFromNetwork };

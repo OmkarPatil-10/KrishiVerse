@@ -1,8 +1,6 @@
-import { useState, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
-import SplashScreen from './pages/SplashScreen';
 import DashboardLayout from './layouts/DashboardLayout';
 import Dashboard from './pages/Dashboard';
 import MarketPrices from './pages/MarketPrices';
@@ -30,44 +28,35 @@ ProtectedRoute.propTypes = {
 };
 
 function App() {
-  const [showSplash, setShowSplash] = useState(true);
-
-  const handleSplashFinish = useCallback(() => {
-    setShowSplash(false);
-  }, []);
-
   return (
-    <>
-      {showSplash && <SplashScreen onFinish={handleSplashFinish} />}
-      <Router>
-        <div className="min-h-screen bg-gray-50 text-gray-900 font-sans">
-          {/* Navbar will be added inside specific layouts or globally if appropriate */}
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
-            <Route element={
-              <ProtectedRoute>
-                <DashboardLayout />
-              </ProtectedRoute>
-            }>
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/market" element={<MarketPrices />} />
-              <Route path="/contracts" element={<Contracts />} />
-              <Route path="/contracts/:id" element={<ContractDetails />} />
-              <Route path="/notifications" element={<Notifications />} />
-              <Route path="/farmers" element={<FarmersList />} />
-              <Route path="/farmers/:id" element={<FarmerDetails />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/wallet" element={<Wallet />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/admin" element={<Admin />} />
-              <Route path="/prediction" element={<PricePrediction />} />
-            </Route>
-          </Routes>
-        </div>
-      </Router>
-    </>
+    <Router>
+      <div className="min-h-screen bg-gray-50 text-gray-900 font-sans">
+        {/* Navbar will be added inside specific layouts or globally if appropriate */}
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route element={
+            <ProtectedRoute>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }>
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/market" element={<MarketPrices />} />
+            <Route path="/contracts" element={<Contracts />} />
+            <Route path="/contracts/:id" element={<ContractDetails />} />
+            <Route path="/notifications" element={<Notifications />} />
+            <Route path="/farmers" element={<FarmersList />} />
+            <Route path="/farmers/:id" element={<FarmerDetails />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/wallet" element={<Wallet />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/admin" element={<Admin />} />
+            <Route path="/prediction" element={<PricePrediction />} />
+          </Route>
+        </Routes>
+      </div>
+    </Router>
   );
 }
 
