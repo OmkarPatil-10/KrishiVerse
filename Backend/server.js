@@ -24,6 +24,7 @@ const cropRoutes = require('./src/routes/cropRoutes');
 const contractRoutes = require('./src/routes/contractRoutes');
 const weatherRoutes = require('./src/routes/weatherRoutes');
 const adminRoutes = require('./src/routes/adminRoutes');
+const userRoutes = require('./src/routes/userRoutes');
 
 // ========== USE ALL ROUTES HERE ==========
 app.use('/api/auth', authRoutes);
@@ -31,10 +32,11 @@ app.use('/api/crops', cropRoutes);
 app.use('/api/contracts', contractRoutes);
 app.use('/api/weather', weatherRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/users', userRoutes);
 
 // Test route
 app.get('/api/health', (req, res) => {
-  res.json({ 
+  res.json({
     status: '✅ Krishiverse Backend is running!',
     timestamp: new Date().toISOString(),
     database: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected'

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Bell, User, Sprout, Mail, Phone, MapPin, Building, Lock, Ruler, Clock, Calendar, FileText, Star, Leaf, Droplets, ChevronRight, Plus, CheckCircle2, Briefcase, Upload, Hash, Save, X, Edit2 } from 'lucide-react';
+import { Bell, User, Sprout, Mail, Phone, MapPin, Building, Lock, Ruler, Clock, Calendar, FileText, Star, Leaf, Droplets, ChevronRight, Plus, CheckCircle2, Briefcase, Upload, Hash, Save, X, Edit2, FileCheck } from 'lucide-react';
 import ProfileSidebar from '../components/ProfileSidebar';
 import { useProfileSidebar } from '../context/ProfileSidebarContext';
 import { useAuth } from '../context/AuthContext';
@@ -27,12 +27,12 @@ const Profile = () => {
     // Buyer and contractor are the same entity
     const userRole = user?.role || user?.userType;
     const isContractor = userRole === 'contractor' || userRole === 'buyer';
-    
+
     // Edit mode states
     const [isEditingPersonal, setIsEditingPersonal] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [saveMessage, setSaveMessage] = useState({ type: '', text: '' });
-    
+
     // Personal info form state
     const [personalFormData, setPersonalFormData] = useState({
         name: user?.name || '',
@@ -49,11 +49,11 @@ const Profile = () => {
         city: user?.city || '',
         fullAddress: user?.fullAddress || ''
     });
-    
+
     const [selectedCrops, setSelectedCrops] = useState(user?.cropsInterested || []);
     const [selectedIrrigation, setSelectedIrrigation] = useState(['Rainfed', 'Tank', 'Canal']);
     const [isOrganic, setIsOrganic] = useState(true);
-    
+
     // Contractor form state
     const [contractorData, setContractorData] = useState({
         cropsInterested: user?.cropsInterested || [],
@@ -64,7 +64,7 @@ const Profile = () => {
         panNumber: user?.panNumber || '',
         businessLicense: user?.businessLicense || ''
     });
-    
+
     // Update form data when user changes
     useEffect(() => {
         if (user) {
@@ -114,7 +114,7 @@ const Profile = () => {
             setSelectedIrrigation([...selectedIrrigation, type]);
         }
     };
-    
+
     // Save personal info
     const handleSavePersonalInfo = async () => {
         setIsSaving(true);
@@ -124,7 +124,7 @@ const Profile = () => {
                 name: personalFormData.name,
                 phone: personalFormData.phone
             };
-            
+
             if (isContractor) {
                 // Contractor fields
                 updateData.businessName = personalFormData.businessName;
@@ -140,7 +140,7 @@ const Profile = () => {
                 updateData.farmSize = personalFormData.farmSize;
                 updateData.farmingExperience = personalFormData.farmingExperience;
             }
-            
+
             await updateProfile(updateData);
             setIsEditingPersonal(false);
             setSaveMessage({ type: 'success', text: 'Profile updated successfully!' });
@@ -151,7 +151,7 @@ const Profile = () => {
             setIsSaving(false);
         }
     };
-    
+
     // Save contractor section 1 (Crop & Trading Interest)
     const handleSaveContractorSection1 = async () => {
         setIsSaving(true);
@@ -163,7 +163,7 @@ const Profile = () => {
                 maxQuantityCapacity: contractorData.maxQuantityCapacity,
                 preferredQualityGrade: contractorData.preferredQualityGrade
             };
-            
+
             await updateProfile(updateData);
             setSaveMessage({ type: 'success', text: 'Crop & Trading Interest saved successfully!' });
             setTimeout(() => setSaveMessage({ type: '', text: '' }), 3000);
@@ -173,7 +173,7 @@ const Profile = () => {
             setIsSaving(false);
         }
     };
-    
+
     // Save contractor section 2 (Optional fields)
     const handleSaveContractorSection2 = async () => {
         setIsSaving(true);
@@ -184,7 +184,7 @@ const Profile = () => {
                 panNumber: contractorData.panNumber,
                 businessLicense: contractorData.businessLicense
             };
-            
+
             await updateProfile(updateData);
             setSaveMessage({ type: 'success', text: 'Optional details saved successfully!' });
             setTimeout(() => setSaveMessage({ type: '', text: '' }), 3000);
@@ -194,7 +194,7 @@ const Profile = () => {
             setIsSaving(false);
         }
     };
-    
+
     // Save farmer farming details
     const handleSaveFarmingDetails = async () => {
         setIsSaving(true);
@@ -205,7 +205,7 @@ const Profile = () => {
             const updateData = {
                 cropsInterested: selectedCrops
             };
-            
+
             await updateProfile(updateData);
             setSaveMessage({ type: 'success', text: 'Farming details saved successfully!' });
             setTimeout(() => setSaveMessage({ type: '', text: '' }), 3000);
@@ -237,7 +237,7 @@ const Profile = () => {
                                     </button>
                                 </div>
                             )}
-                    </div>
+                        </div>
                     </div>
                 </div>
 
@@ -275,16 +275,18 @@ const Profile = () => {
 
                         {/* Badges */}
                         <div className="flex flex-wrap gap-2 justify-center mb-4">
-                            <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1">
-                                <CheckCircle2 className="w-4 h-4" />
+                            <span className="bg-[#e6f9ed] text-[#2b9f4e] px-4 py-1.5 rounded-full text-sm font-bold flex items-center gap-2 shadow-sm">
+                                <CheckCircle2 className="w-4 h-4 fill-current text-[#e6f9ed]" />
                                 Verified
                             </span>
-                            <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1">
-                                <Leaf className="w-4 h-4" />
-                                Smart Contract
-                            </span>
-                            <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1">
-                                <Leaf className="w-4 h-4" />
+                            {(address || user?.walletAddress) && (
+                                <span className="bg-[#e6f9ed] text-[#2b9f4e] px-4 py-1.5 rounded-full text-sm font-bold flex items-center gap-2 shadow-sm">
+                                    <FileCheck className="w-5 h-5 fill-current text-[#e6f9ed]" />
+                                    <span className="leading-tight text-left text-xs">Smart<br />Contract</span>
+                                </span>
+                            )}
+                            <span className="bg-[#e6f9ed] text-[#2b9f4e] px-4 py-1.5 rounded-full text-sm font-bold flex items-center gap-2 shadow-sm">
+                                <Leaf className="w-4 h-4 fill-current text-[#2b9f4e]" />
                                 Organic
                             </span>
                         </div>
@@ -333,11 +335,10 @@ const Profile = () => {
 
                     {/* Success/Error Message */}
                     {saveMessage.text && (
-                        <div className={`mb-4 p-4 rounded-lg ${
-                            saveMessage.type === 'success' 
-                                ? 'bg-green-50 text-green-800 border border-green-200' 
+                        <div className={`mb-4 p-4 rounded-lg ${saveMessage.type === 'success'
+                                ? 'bg-green-50 text-green-800 border border-green-200'
                                 : 'bg-red-50 text-red-800 border border-red-200'
-                        }`}>
+                            }`}>
                             {saveMessage.text}
                         </div>
                     )}
@@ -635,7 +636,7 @@ const Profile = () => {
                                         {isSaving ? 'Saving...' : 'Save'}
                                     </button>
                                 </div>
-                                
+
                                 {/* Crops Interested In */}
                                 <div className="mb-4">
                                     <label className="block text-sm font-medium text-gray-700 mb-2">Crops Interested In (Multi-select) *</label>
@@ -650,11 +651,10 @@ const Profile = () => {
                                                         : [...contractorData.cropsInterested, crop];
                                                     setContractorData({ ...contractorData, cropsInterested: newCrops });
                                                 }}
-                                                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                                                    contractorData.cropsInterested.includes(crop)
+                                                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${contractorData.cropsInterested.includes(crop)
                                                         ? 'bg-green-50 border-2 border-primary text-primary'
                                                         : 'bg-gray-50 border-2 border-gray-200 text-gray-600'
-                                                }`}
+                                                    }`}
                                             >
                                                 {crop}
                                             </button>
@@ -689,9 +689,9 @@ const Profile = () => {
                                 </div>
 
                                 {/* Preferred Quality Grade */}
-                    <div>
+                                <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">Preferred Quality Grade *</label>
-                        <select
+                                    <select
                                         value={contractorData.preferredQualityGrade}
                                         onChange={(e) => setContractorData({ ...contractorData, preferredQualityGrade: e.target.value })}
                                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
@@ -701,9 +701,9 @@ const Profile = () => {
                                         <option value="A">Grade A</option>
                                         <option value="B">Grade B</option>
                                         <option value="C">Grade C</option>
-                        </select>
-                    </div>
-                </div>
+                                    </select>
+                                </div>
+                            </div>
 
                             {/* SECTION 2: Optional Fields */}
                             <div className="bg-white rounded-xl shadow-sm p-4 md:p-6 mb-4">
@@ -785,83 +785,79 @@ const Profile = () => {
                         <>
                             {/* Farming Details Card */}
                             <div className="bg-white rounded-xl shadow-sm p-4 md:p-6 mb-4">
-                        <div className="mb-4 flex items-center justify-between">
-                            <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                                <Leaf className="w-5 h-5 text-primary" />
-                                Crop Grown (Multi-Select)
-                            </h3>
-                            <button
-                                onClick={handleSaveFarmingDetails}
-                                disabled={isSaving}
-                                className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
-                            >
-                                <Save className="w-4 h-4" />
-                                {isSaving ? 'Saving...' : 'Save'}
-                            </button>
-                        </div>
-                        <div className="grid grid-cols-3 gap-2 mb-6">
-                            {crops.map((crop) => (
-                                <button
-                                    key={crop}
-                                    onClick={() => toggleCrop(crop)}
-                                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                                        selectedCrops.includes(crop)
-                                            ? 'bg-green-50 border-2 border-primary text-primary'
-                                            : 'bg-gray-50 border-2 border-gray-200 text-gray-600'
-                                    }`}
-                                >
-                                    {crop}
-                                </button>
-                            ))}
-                        </div>
-
-                        <div className="mb-4">
-                            <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                                <Droplets className="w-5 h-5 text-primary" />
-                                Irrigation Type (Multi-Select)
-                            </h3>
-                        </div>
-                        <div className="grid grid-cols-3 gap-2 mb-6">
-                            {irrigationTypes.map((type) => (
-                                <button
-                                    key={type}
-                                    onClick={() => toggleIrrigation(type)}
-                                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                                        selectedIrrigation.includes(type)
-                                            ? 'bg-green-50 border-2 border-primary text-primary'
-                                            : 'bg-gray-50 border-2 border-gray-200 text-gray-600'
-                                    }`}
-                                >
-                                    {type}
-                                </button>
-                            ))}
-                        </div>
-
-                        <div>
-                            <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2 mb-3">
-                                <Leaf className="w-5 h-5 text-primary" />
-                                Organic Farming
-                            </h3>
-                            <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                                <div className="flex items-center gap-2">
-                                    <Leaf className="w-5 h-5 text-primary" />
-                                    <span className="font-semibold text-gray-900">Organic Certified</span>
+                                <div className="mb-4 flex items-center justify-between">
+                                    <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                                        <Leaf className="w-5 h-5 text-primary" />
+                                        Crop Grown (Multi-Select)
+                                    </h3>
+                                    <button
+                                        onClick={handleSaveFarmingDetails}
+                                        disabled={isSaving}
+                                        className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
+                                    >
+                                        <Save className="w-4 h-4" />
+                                        {isSaving ? 'Saving...' : 'Save'}
+                                    </button>
                                 </div>
-                                <button
-                                    onClick={() => setIsOrganic(!isOrganic)}
-                                    className={`relative w-12 h-6 rounded-full transition-colors ${
-                                        isOrganic ? 'bg-primary' : 'bg-gray-300'
-                                    }`}
-                                >
-                                    <span
-                                        className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${
-                                            isOrganic ? 'translate-x-6' : 'translate-x-0'
-                                        }`}
-                                    />
-                                </button>
+                                <div className="grid grid-cols-3 gap-2 mb-6">
+                                    {crops.map((crop) => (
+                                        <button
+                                            key={crop}
+                                            onClick={() => toggleCrop(crop)}
+                                            className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${selectedCrops.includes(crop)
+                                                    ? 'bg-green-50 border-2 border-primary text-primary'
+                                                    : 'bg-gray-50 border-2 border-gray-200 text-gray-600'
+                                                }`}
+                                        >
+                                            {crop}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                <div className="mb-4">
+                                    <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                                        <Droplets className="w-5 h-5 text-primary" />
+                                        Irrigation Type (Multi-Select)
+                                    </h3>
+                                </div>
+                                <div className="grid grid-cols-3 gap-2 mb-6">
+                                    {irrigationTypes.map((type) => (
+                                        <button
+                                            key={type}
+                                            onClick={() => toggleIrrigation(type)}
+                                            className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${selectedIrrigation.includes(type)
+                                                    ? 'bg-green-50 border-2 border-primary text-primary'
+                                                    : 'bg-gray-50 border-2 border-gray-200 text-gray-600'
+                                                }`}
+                                        >
+                                            {type}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                <div>
+                                    <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2 mb-3">
+                                        <Leaf className="w-5 h-5 text-primary" />
+                                        Organic Farming
+                                    </h3>
+                                    <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                                        <div className="flex items-center gap-2">
+                                            <Leaf className="w-5 h-5 text-primary" />
+                                            <span className="font-semibold text-gray-900">Organic Certified</span>
+                                        </div>
+                                        <button
+                                            onClick={() => setIsOrganic(!isOrganic)}
+                                            className={`relative w-12 h-6 rounded-full transition-colors ${isOrganic ? 'bg-primary' : 'bg-gray-300'
+                                                }`}
+                                        >
+                                            <span
+                                                className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${isOrganic ? 'translate-x-6' : 'translate-x-0'
+                                                    }`}
+                                            />
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                    </div>
                         </>
                     )}
 
@@ -893,7 +889,7 @@ const Profile = () => {
                         </div>
                     </div>
                 </div>
-        </div>
+            </div>
 
             {/* Profile Sidebar */}
             <ProfileSidebar />

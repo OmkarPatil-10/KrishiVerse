@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, MapPin, Maximize, Star, Clock, CheckCircle2, User, ChevronDown, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useProfileSidebar } from '../context/ProfileSidebarContext';
+import api from '../services/api';
 
 const FarmersList = () => {
     const navigate = useNavigate();
@@ -11,64 +12,107 @@ const FarmersList = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [activeFilter, setActiveFilter] = useState('All');
 
-    // Mock farmer data
-    const farmers = [
-        {
-            id: 'F001',
-            name: 'Omkar Patil',
-            verified: true,
-            status: 'Added',
-            location: 'Maharashtra',
-            farmSize: '8.5 Acre',
-            crops: ['Rice', 'Wheat', 'Cotton'],
-            rating: 4.5,
-            experience: '09 Years'
-        },
-        {
-            id: 'F002',
-            name: 'Nikhil Patil',
-            verified: true,
-            status: '',
-            location: 'Gujarat',
-            farmSize: '8.5 Acre',
-            crops: ['Rice', 'Wheat', 'Cotton'],
-            rating: 4.5,
-            experience: '12 Years'
-        },
-        {
-            id: 'F003',
-            name: 'Sahil Shete',
-            verified: true,
-            status: 'Added',
-            location: 'Maharashtra',
-            farmSize: '12 Acre',
-            crops: ['Rice', 'Wheat'],
-            rating: 4.1,
-            experience: '20 Years'
-        },
-        {
-            id: 'F004',
-            name: 'Ayush Rokade',
-            verified: true,
-            status: 'Added',
-            location: 'Punjab',
-            farmSize: '15 Acre',
-            crops: ['Rice', 'Corn', 'Cotton'],
-            rating: 4.7,
-            experience: '15 Years'
-        },
-        {
-            id: 'F005',
-            name: 'Vaibhav Shedge',
-            verified: true,
-            status: '',
-            location: 'Telangana',
-            farmSize: '10 Acre',
-            crops: ['Rice', 'Wheat', 'Cotton'],
-            rating: 4.1,
-            experience: '05 Years'
-        }
-    ];
+    const [farmers, setFarmers] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchFarmers = async () => {
+            try {
+                const response = await api.get('/users/farmers');
+                if (response.data.success && response.data.data.length > 0) {
+                    const formattedData = response.data.data.map(f => ({
+                        id: f._id,
+                        name: f.name,
+                        verified: true,
+                        status: 'Verified',
+                        location: f.location || 'Unknown',
+                        farmSize: f.farmSize ? `${f.farmSize} Acre` : 'N/A',
+                        crops: f.cropsInterested || [],
+                        rating: 4.8,
+                        experience: f.farmingExperience ? `${f.farmingExperience} Years` : 'N/A',
+                        walletConnected: !!f.walletAddress
+                    }));
+                    setFarmers(formattedData);
+                } else {
+                    loadMockData();
+                }
+            } catch (error) {
+                console.error("Error fetching farmers:", error);
+                loadMockData();
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        const loadMockData = () => {
+            const mockFarmers = [
+                {
+                    id: 'F001',
+                    name: 'Omkar Patil',
+                    verified: true,
+                    status: 'Added',
+                    location: 'Maharashtra',
+                    farmSize: '8.5 Acre',
+                    crops: ['Rice', 'Wheat', 'Cotton'],
+                    rating: 4.5,
+                    experience: '09 Years',
+                    walletConnected: true
+                },
+                {
+                    id: 'F002',
+                    name: 'Nikhil Patil',
+                    verified: true,
+                    status: '',
+                    location: 'Gujarat',
+                    farmSize: '8.5 Acre',
+                    crops: ['Rice', 'Wheat', 'Cotton'],
+                    rating: 4.5,
+                    experience: '12 Years',
+                    walletConnected: false
+                },
+                {
+                    id: 'F003',
+                    name: 'Sahil Shete',
+                    verified: true,
+                    status: 'Added',
+                    location: 'Maharashtra',
+                    farmSize: '12 Acre',
+                    crops: ['Rice', 'Wheat'],
+                    rating: 4.1,
+                    experience: '20 Years',
+                    walletConnected: true
+                },
+                {
+                    id: 'F004',
+                    name: 'Ayush Rokade',
+                    verified: true,
+                    status: 'Added',
+                    location: 'Punjab',
+                    farmSize: '15 Acre',
+                    crops: ['Rice', 'Corn', 'Cotton'],
+                    rating: 4.7,
+                    experience: '15 Years',
+                    walletConnected: false
+                },
+                {
+                    id: 'F005',
+                    name: 'Vaibhav Shedge',
+                    verified: true,
+                    status: '',
+                    location: 'Telangana',
+                    farmSize: '10 Acre',
+                    crops: ['Rice', 'Wheat', 'Cotton'],
+                    rating: 4.1,
+                    experience: '05 Years',
+                    walletConnected: true
+                }
+            ];
+            // Only show farmers that have connected their wallet
+            setFarmers(mockFarmers.filter(f => f.walletConnected));
+        };
+
+        fetchFarmers();
+    }, []);
 
     const handleClearFilters = () => {
         setActiveFilter('All');
@@ -164,68 +208,78 @@ const FarmersList = () => {
                 </div>
 
                 {/* Farmers List */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {farmers
-                        .filter(f =>
-                            f.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                            f.location.toLowerCase().includes(searchQuery.toLowerCase())
-                        )
-                        .map((farmer) => (
-                            <div key={farmer.id} className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
-                                <div className="flex items-start gap-4">
-                                    <div className="w-12 h-12 bg-green-50 rounded-full flex items-center justify-center flex-shrink-0 text-green-500">
-                                        <User className="w-6 h-6" />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <h3 className="text-lg font-bold text-gray-900 truncate">{farmer.name}</h3>
-                                            {farmer.verified && <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />}
-                                            {farmer.status && (
-                                                <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-xs font-medium ml-1">
-                                                    {farmer.status}
-                                                </span>
-                                            )}
+                {isLoading ? (
+                    <div className="flex justify-center items-center py-10">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                    </div>
+                ) : farmers.length === 0 ? (
+                    <div className="text-center py-10 bg-white rounded-xl shadow-sm border border-gray-100">
+                        <p className="text-gray-500">No farmers found with a connected wallet.</p>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {farmers
+                            .filter(f =>
+                                f.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                f.location.toLowerCase().includes(searchQuery.toLowerCase())
+                            )
+                            .map((farmer) => (
+                                <div key={farmer.id} className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
+                                    <div className="flex items-start gap-4">
+                                        <div className="w-12 h-12 bg-green-50 rounded-full flex items-center justify-center flex-shrink-0 text-green-500">
+                                            <User className="w-6 h-6" />
                                         </div>
-                                        <div className="flex items-center gap-4 text-sm text-gray-500 mb-2">
-                                            <div className="flex items-center gap-1">
-                                                <MapPin className="w-3.5 h-3.5" />
-                                                <span>{farmer.location}</span>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <h3 className="text-lg font-bold text-gray-900 truncate">{farmer.name}</h3>
+                                                {farmer.verified && <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />}
+                                                {farmer.status && (
+                                                    <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-xs font-medium ml-1">
+                                                        {farmer.status}
+                                                    </span>
+                                                )}
                                             </div>
-                                            <div className="flex items-center gap-1">
-                                                <Maximize className="w-3.5 h-3.5" />
-                                                <span>{farmer.farmSize}</span>
-                                            </div>
-                                        </div>
-                                        <div className="flex flex-wrap gap-2 mb-3">
-                                            {farmer.crops.map((crop, idx) => (
-                                                <span key={idx} className="bg-green-50 text-green-700 px-2 py-0.5 rounded text-xs font-medium">
-                                                    {crop}
-                                                </span>
-                                            ))}
-                                        </div>
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-3 text-sm text-gray-500">
+                                            <div className="flex items-center gap-4 text-sm text-gray-500 mb-2">
                                                 <div className="flex items-center gap-1">
-                                                    <Star className="w-3.5 h-3.5 text-yellow-500 fill-current" />
-                                                    <span>{farmer.rating}</span>
+                                                    <MapPin className="w-3.5 h-3.5" />
+                                                    <span>{farmer.location}</span>
                                                 </div>
                                                 <div className="flex items-center gap-1">
-                                                    <Clock className="w-3.5 h-3.5" />
-                                                    <span>{farmer.experience}</span>
+                                                    <Maximize className="w-3.5 h-3.5" />
+                                                    <span>{farmer.farmSize}</span>
                                                 </div>
                                             </div>
-                                            <button
-                                                onClick={() => navigate(`/farmers/${farmer.id}`)}
-                                                className="text-blue-500 text-sm font-medium hover:text-blue-700 transition-colors"
-                                            >
-                                                View Details
-                                            </button>
+                                            <div className="flex flex-wrap gap-2 mb-3">
+                                                {farmer.crops.map((crop, idx) => (
+                                                    <span key={idx} className="bg-green-50 text-green-700 px-2 py-0.5 rounded text-xs font-medium">
+                                                        {crop}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-3 text-sm text-gray-500">
+                                                    <div className="flex items-center gap-1">
+                                                        <Star className="w-3.5 h-3.5 text-yellow-500 fill-current" />
+                                                        <span>{farmer.rating}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-1">
+                                                        <Clock className="w-3.5 h-3.5" />
+                                                        <span>{farmer.experience}</span>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={() => navigate(`/farmers/${farmer.id}`)}
+                                                    className="text-blue-500 text-sm font-medium hover:text-blue-700 transition-colors"
+                                                >
+                                                    View Details
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
-                </div>
+                            ))}
+                    </div>
+                )}
             </div>
         </div>
     );

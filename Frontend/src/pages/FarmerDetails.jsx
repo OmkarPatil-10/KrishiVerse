@@ -1,23 +1,73 @@
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2, Star, User, Phone, Mail } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Star, User, Phone, Mail, FileCheck, Leaf } from 'lucide-react';
 
 const FarmerDetails = () => {
     const navigate = useNavigate();
     const { id } = useParams();
 
-    // Mock farmer data - in a real app this would be fetched based on `id`
-    const farmer = {
-        id: id || 'F001',
-        name: 'Omkar Patil',
-        verified: true,
-        location: 'Maharashtra, Raigad',
-        farmSize: '8.5 Acre',
-        experience: '09 Years',
-        crops: ['Rice', 'Cotton', 'Wheat'],
-        phone: '+91 9167173584',
-        email: 'omkarpatil@gmail.com',
-        rating: 4.5
-    };
+    const [farmer, setFarmer] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchFarmer = async () => {
+            try {
+                // Remove /users from the route as the backend is just /farmers or the api prefix has it. Wait, in FarmersList.jsx we used api.get('/users/farmers').
+                // Let's use api.get(`/users/farmers/${id}`)
+                const { default: api } = await import('../services/api');
+                const response = await api.get(`/users/farmers/${id}`);
+                if (response.data.success && response.data.data) {
+                    const f = response.data.data;
+                    setFarmer({
+                        id: f._id,
+                        name: f.name,
+                        verified: true,
+                        location: f.location || 'Unknown',
+                        farmSize: f.farmSize ? `${f.farmSize} Acre` : 'N/A',
+                        experience: f.farmingExperience ? `${f.farmingExperience} Years` : 'N/A',
+                        crops: f.cropsInterested || [],
+                        phone: f.phone || 'N/A',
+                        email: f.email || 'N/A',
+                        rating: 4.8,
+                        walletConnected: !!f.walletAddress
+                    });
+                } else {
+                    loadMock();
+                }
+            } catch (error) {
+                console.error("Error fetching farmer:", error);
+                loadMock();
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        const loadMock = () => {
+            setFarmer({
+                id: id || 'F001',
+                name: 'Omkar Patil',
+                verified: true,
+                location: 'Maharashtra, Raigad',
+                farmSize: '8.5 Acre',
+                experience: '09 Years',
+                crops: ['Rice', 'Cotton', 'Wheat'],
+                phone: '+91 9167173584',
+                email: 'omkarpatil@gmail.com',
+                rating: 4.5,
+                walletConnected: id === 'F002' || id === 'F004' ? false : true // mock variations
+            });
+        };
+
+        fetchFarmer();
+    }, [id]);
+
+    if (isLoading) {
+        return <div className="min-h-screen bg-blue-50 flex items-center justify-center">Loading...</div>;
+    }
+
+    if (!farmer) {
+        return <div className="min-h-screen bg-blue-50 flex items-center justify-center">Farmer not found</div>;
+    }
 
     return (
         <div className="min-h-screen bg-blue-50 pb-20 md:pb-6 font-sans">
@@ -82,14 +132,33 @@ const FarmerDetails = () => {
                         <div>
                             <div className="flex items-center gap-2 mb-1">
                                 <h2 className="text-2xl font-bold text-gray-900">{farmer.name}</h2>
-                                {farmer.verified && <CheckCircle2 className="w-5 h-5 text-green-500" />}
                             </div>
-                            <div className="flex items-center gap-4 text-sm text-gray-600 font-medium">
+                            <div className="flex items-center gap-4 text-sm text-gray-600 font-medium mb-3">
                                 <div className="flex items-center gap-1">
                                     <Star className="w-4 h-4 text-yellow-500 fill-current" />
                                     <span>{farmer.rating}</span>
                                 </div>
                                 <span>ID: {farmer.id}</span>
+                            </div>
+
+                            {/* Badges row */}
+                            <div className="flex flex-wrap gap-2 mb-2">
+                                {farmer.verified && (
+                                    <span className="bg-[#e6f9ed] text-[#2b9f4e] px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-sm">
+                                        <CheckCircle2 className="w-3.5 h-3.5 fill-current text-[#e6f9ed]" />
+                                        Verified
+                                    </span>
+                                )}
+                                {farmer.walletConnected && (
+                                    <span className="bg-[#e6f9ed] text-[#2b9f4e] px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-sm">
+                                        <FileCheck className="w-4 h-4 fill-current text-[#e6f9ed]" />
+                                        <span className="leading-tight text-left" style={{ fontSize: '10px' }}>Smart<br />Contract</span>
+                                    </span>
+                                )}
+                                <span className="bg-[#e6f9ed] text-[#2b9f4e] px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-sm">
+                                    <Leaf className="w-3.5 h-3.5 fill-current text-[#2b9f4e]" />
+                                    Organic
+                                </span>
                             </div>
                         </div>
                     </div>
