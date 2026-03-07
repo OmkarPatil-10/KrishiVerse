@@ -17,6 +17,7 @@ import FarmerDetails from './pages/FarmerDetails';
 import { useAuth } from './context/AuthContext';
 import PropTypes from 'prop-types';
 
+
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
   if (loading) return <div>Loading...</div>;
@@ -55,6 +56,7 @@ function App() {
             <Route path="/prediction" element={<PricePrediction />} />
           </Route>
         </Routes>
+
       </div>
     </Router>
   );

@@ -120,7 +120,7 @@ const Login = () => {
                         </Link>
                     </div>
 
-                    {/* Development Mode Bypass Button */}
+                    {/* Development Mode Bypass Button
                     <div className="mt-4 pt-4 border-t border-gray-200">
                         <button
                             onClick={handleDevLogin}
@@ -131,7 +131,7 @@ const Login = () => {
                         <p className="text-xs text-gray-500 text-center mt-2">
                             Use this to test UI without backend connection
                         </p>
-                    </div>
+                    </div> */}
                 </div>
             </div>
         </div>

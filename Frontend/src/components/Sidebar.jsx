@@ -61,6 +61,7 @@ import { useAuth } from '../context/AuthContext';
 import { clsx } from 'clsx';
 import { useTranslation } from 'react-i18next';
 
+
 const Sidebar = () => {
     const location = useLocation();
     const { user } = useAuth();
@@ -78,6 +79,7 @@ const Sidebar = () => {
         { name: 'Settings', path: '/settings', icon: Settings, roles: ['farmer', 'contractor', 'admin'] },
         { name: 'Admin Panel', path: '/admin', icon: Shield, roles: ['admin'] },
     ];
+
 
     // Buyer and contractor are the same - normalize to contractor
     const userRole = user?.role || user?.userType;
