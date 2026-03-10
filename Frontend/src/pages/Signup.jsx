@@ -23,8 +23,7 @@ import {
 } from "lucide-react";
 import { ConnectWallet, useAddress } from "@thirdweb-dev/react";
 import api from "../services/api";
-
-
+import { toast } from "react-toastify";
 
 const Signup = () => {
   const [formData, setFormData] = useState({
@@ -170,6 +169,8 @@ const Signup = () => {
       }
 
       await signup(submitData);
+      toast.success('User registered successfully! 🎉');
+      
       // Redirect to login page after successful registration
       navigate("/login");
     } catch (err) {

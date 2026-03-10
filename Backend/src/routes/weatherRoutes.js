@@ -1,16 +1,8 @@
 const express = require('express');
 const router = express.Router();
+const weatherController = require('../controllers/weatherController');
 
-router.get('/', (req, res) => {
-  res.json({
-    success: true,
-    weather: {
-      temperature: 28,
-      condition: 'Sunny',
-      humidity: 65,
-      advice: 'Good day for farming activities'
-    }
-  });
-});
+// GET /api/weather?city=Pune&state=Maharashtra
+router.get('/', weatherController.getWeatherForecast);
 
 module.exports = router;

@@ -2,8 +2,20 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 require('dotenv').config();
+const http = require('http');
+const { Server } = require('socket.io');
+const Message = require('./src/models/Message');
 
 const app = express();
+const server = http.createServer(app);
+
+// Socket.io setup
+const io = new Server(server, {
+  cors: {
+    origin: "*", // allow frontend origins
+    methods: ["GET", "POST", "PUT"]
+  }
+});
 
 // Middleware
 app.use(cors());
@@ -26,6 +38,8 @@ const weatherRoutes = require('./src/routes/weatherRoutes');
 const adminRoutes = require('./src/routes/adminRoutes');
 const userRoutes = require('./src/routes/userRoutes');
 const otpRoutes = require('./src/routes/otpRoutes');
+const supportRoutes = require('./src/routes/supportRoutes');
+const notificationRoutes = require('./src/routes/notificationRoutes');
 
 // ========== USE ALL ROUTES HERE ==========
 app.use('/api/auth', authRoutes);
@@ -35,6 +49,8 @@ app.use('/api/weather', weatherRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/otp', otpRoutes);
+app.use('/api/support', supportRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Test route
 app.get('/api/health', (req, res) => {
@@ -63,15 +79,44 @@ app.use((err, req, res, next) => {
   });
 });
 
+// ---------------- SOCKET.IO LOGIC ----------------
+io.on('connection', (socket) => {
+  console.log(`🔌 New client connected: ${socket.id}`);
+
+  // Join a room based on contractId
+  socket.on('join_room', (contractId) => {
+    socket.join(contractId);
+    console.log(`👤 Socket ${socket.id} joined room/contract: ${contractId}`);
+  });
+
+  // Handle incoming message
+  socket.on('send_message', async (data) => {
+    try {
+      // data: { contractId, senderId, senderName, role, text }
+      const newMessage = new Message({
+        contractId: data.contractId,
+        senderId: data.senderId,
+        senderName: data.senderName,
+        role: data.role,
+        text: data.text
+      });
+      await newMessage.save();
+
+      // Emit to everyone in the room, including sender
+      io.to(data.contractId).emit('receive_message', newMessage);
+    } catch (err) {
+      console.error('Error saving message:', err);
+    }
+  });
+
+  socket.on('disconnect', () => {
+    console.log(`🔌 Client disconnected: ${socket.id}`);
+  });
+});
+
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
   console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
-  console.log(`🌾 Available endpoints:`);
-  console.log(`   POST /api/auth/register`);
-  console.log(`   POST /api/auth/login`);
-  console.log(`   GET  /api/crops`);
-  console.log(`   POST /api/crops`);
-  console.log(`   GET  /api/contracts`);
-  console.log(`   POST /api/contracts`);
+  console.log(`💬 Socket.io enabled`);
 });

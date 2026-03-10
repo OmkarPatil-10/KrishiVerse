@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Sprout, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { toast } from 'react-toastify';
 
 const Login = () => {
     const [email, setEmail] = useState('');
@@ -18,6 +19,7 @@ const Login = () => {
         setError('');
         try {
             await login(email, password);
+            toast.success('User logged in successfully! 👋');
             navigate('/dashboard');
         } catch (err) {
             setError(err.response?.data?.message || 'Login failed. Please check your credentials.');

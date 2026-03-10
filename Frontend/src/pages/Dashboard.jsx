@@ -1,9 +1,10 @@
-import { useTranslation } from 'react-i18next';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, User, Sprout, TrendingUp, FileText, BarChart3, Sun, Plus, Search, Wallet, RefreshCw } from 'lucide-react';
+import { Bell, User, Sprout, TrendingUp, TrendingDown, FileText, BarChart3, Sun, Cloud, CloudRain, CloudLightning, Wallet, RefreshCw, Loader2 } from 'lucide-react';
 import { useProfileSidebar } from '../context/ProfileSidebarContext';
 import { useAuth } from '../context/AuthContext';
 import ContractorDashboard from './ContractorDashboard';
+import api from '../services/api';
 import { Line } from 'react-chartjs-2';
 import {
     Chart as ChartJS,
@@ -29,44 +30,149 @@ ChartJS.register(
     Filler
 );
 
+// Map weather condition to icon
+const getWeatherIcon = (condition) => {
+    if (!condition) return Sun;
+    const c = condition.toLowerCase();
+    if (c.includes('clear') || c.includes('sunny')) return Sun;
+    if (c.includes('thunder') || c.includes('storm')) return CloudLightning;
+    if (c.includes('rain') || c.includes('drizzle')) return CloudRain;
+    if (c.includes('cloud') || c.includes('overcast') || c.includes('haze')) return Cloud;
+    return Sun;
+};
+
+// Get farming advice based on weather
+const getWeatherAdvice = (description) => {
+    if (!description) return 'Check weather before planning outdoor activities';
+    const d = description.toLowerCase();
+    if (d.includes('rain') || d.includes('drizzle')) return 'Delay pesticide application';
+    if (d.includes('clear') || d.includes('sunny')) return 'Perfect for harvest';
+    if (d.includes('cloud') || d.includes('haze')) return 'Good for field work';
+    return 'Check conditions before field work';
+};
+
 const Dashboard = () => {
-    const { t } = useTranslation();
     const navigate = useNavigate();
     const { openSidebar, isOpen: isSidebarOpen } = useProfileSidebar();
     const { user } = useAuth();
 
-    // Show contractor dashboard if user is contractor (buyer and contractor are the same)
+    // Show contractor dashboard if user is contractor
     const userRole = user?.role || user?.userType;
     if (userRole === 'contractor' || userRole === 'buyer') {
         return <ContractorDashboard />;
     }
 
-    // Chart data for AI Price Forecast
-    const chartData = {
-        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    // === State ===
+    const [contracts, setContracts] = useState([]);
+    const [contractsLoading, setContractsLoading] = useState(true);
+    const [weather, setWeather] = useState(null);
+    const [weatherLoading, setWeatherLoading] = useState(true);
+    const [predictions, setPredictions] = useState([]);
+
+    // === Fetch contracts ===
+    useEffect(() => {
+        const fetchContracts = async () => {
+            try {
+                const res = await api.get('/contracts');
+                if (res.data.success) {
+                    setContracts(res.data.contracts || []);
+                }
+            } catch (err) {
+                console.error('Failed to load contracts:', err);
+            } finally {
+                setContractsLoading(false);
+            }
+        };
+        fetchContracts();
+    }, []);
+
+    // === Fetch weather ===
+    useEffect(() => {
+        const fetchWeather = async () => {
+            try {
+                const city = user?.city || user?.location || user?.district || 'Pune';
+                const res = await api.get(`/weather?city=${encodeURIComponent(city)}`);
+                if (res.data.success) {
+                    setWeather(res.data.weather);
+                }
+            } catch (err) {
+                console.error('Failed to load weather:', err);
+            } finally {
+                setWeatherLoading(false);
+            }
+        };
+        fetchWeather();
+    }, [user]);
+
+    // === Load predictions from localStorage ===
+    useEffect(() => {
+        const stored = JSON.parse(localStorage.getItem('krishiverse_predictions') || '[]');
+        setPredictions(stored);
+    }, []);
+
+    // === Computed values ===
+    const userId = user?._id || user?.id;
+
+    // Farmer's contracts (accepted by this farmer)
+    const myContracts = contracts.filter(c =>
+        c.acceptedBy?.farmerId === userId
+    );
+
+    // All open contracts available for farmer
+    const openContracts = contracts.filter(c => c.status === 'open');
+
+    const activeContracts = myContracts.filter(c =>
+        c.status === 'accepted' || c.status === 'outForDelivery'
+    );
+
+    const completedContracts = myContracts.filter(c => c.status === 'completed');
+
+    const totalEarnings = completedContracts.reduce((sum, c) => sum + (c.totalBudget || 0), 0);
+
+    // Latest prediction
+    const latestPrediction = predictions.length > 0 ? predictions[0] : null;
+
+    // Weather data
+    const currentTemp = weather ? Math.round(weather.temperature?.current || 0) : null;
+    const weatherDesc = weather?.description || '';
+    const WeatherIcon = getWeatherIcon(weatherDesc);
+    const weatherAdvice = getWeatherAdvice(weatherDesc);
+
+    // === Chart Data from predictions ===
+    const chartPredictions = predictions.slice(0, 10).reverse(); // Oldest first for chart
+    const hasChartData = chartPredictions.length > 0;
+
+    const chartData = hasChartData ? {
+        labels: chartPredictions.map((p) => {
+            const d = new Date(p.timestamp);
+            return `${d.getDate()}/${d.getMonth() + 1}`;
+        }),
         datasets: [
             {
-                label: 'Wheat (₹/quintal)',
-                data: [2380, 2420, 2480, 2520, 2580, 2620, 2650],
+                label: 'Predicted Price (₹/quintal)',
+                data: chartPredictions.map(p => p.predictedPrice),
                 borderColor: '#2E7D32',
                 backgroundColor: 'rgba(46, 125, 50, 0.1)',
                 fill: true,
                 tension: 0.4,
-                pointRadius: 4,
+                pointRadius: 5,
                 pointBackgroundColor: '#2E7D32',
             },
-            {
-                label: 'Rice (₹/quintal)',
-                data: [2150, 2180, 2220, 2280, 2320, 2350, 2380],
-                borderColor: '#EAB308',
-                backgroundColor: 'rgba(234, 179, 8, 0.1)',
-                fill: true,
-                tension: 0.4,
-                pointRadius: 4,
-                pointBackgroundColor: '#EAB308',
-            },
         ],
+    } : {
+        labels: ['No data yet'],
+        datasets: [{
+            label: 'Predicted Price (₹/quintal)',
+            data: [0],
+            borderColor: '#ccc',
+            backgroundColor: 'rgba(200,200,200,0.1)',
+            fill: true,
+        }],
     };
+
+    const priceValues = chartPredictions.map(p => p.predictedPrice).filter(Boolean);
+    const minPrice = priceValues.length > 0 ? Math.min(...priceValues) - 200 : 0;
+    const maxPrice = priceValues.length > 0 ? Math.max(...priceValues) + 200 : 5000;
 
     const chartOptions = {
         responsive: true,
@@ -78,34 +184,35 @@ const Dashboard = () => {
                 labels: {
                     usePointStyle: true,
                     padding: 15,
-                    font: {
-                        size: 12,
-                    },
+                    font: { size: 12 },
                 },
             },
             tooltip: {
                 enabled: true,
+                callbacks: {
+                    title: (items) => {
+                        const idx = items[0]?.dataIndex;
+                        if (idx !== undefined && chartPredictions[idx]) {
+                            return `${chartPredictions[idx].commodity} - ${chartPredictions[idx].variety}`;
+                        }
+                        return '';
+                    },
+                    label: (item) => `₹${item.raw?.toLocaleString()} /quintal`,
+                },
             },
         },
         scales: {
             y: {
                 beginAtZero: false,
-                min: 2130,
-                max: 2700,
+                min: minPrice,
+                max: maxPrice,
                 ticks: {
-                    stepSize: 150,
-                    callback: function(value) {
-                        return value;
-                    },
+                    callback: (v) => `₹${v}`,
                 },
-                grid: {
-                    color: 'rgba(0, 0, 0, 0.05)',
-                },
+                grid: { color: 'rgba(0, 0, 0, 0.05)' },
             },
             x: {
-                grid: {
-                    display: false,
-                },
+                grid: { display: false },
             },
         },
     };
@@ -123,10 +230,12 @@ const Dashboard = () => {
                             <span className="text-lg font-bold text-gray-800 md:hidden">KrishiVerse</span>
                         </div>
                         {!isSidebarOpen && (
-                            <div className="flex items-center gap-3">
-                                <Bell className="w-5 h-5 text-gray-600 cursor-pointer" />
+                            <div className="flex items-center gap-3 md:hidden">
+                                <button onClick={() => navigate('/notifications')}>
+                                    <Bell className="w-5 h-5 text-gray-600 hover:text-green-600 transition-colors cursor-pointer" />
+                                </button>
                                 <button onClick={openSidebar}>
-                                    <User className="w-5 h-5 text-gray-600 cursor-pointer" />
+                                    <User className="w-5 h-5 text-gray-600 hover:text-green-600 transition-colors cursor-pointer" />
                                 </button>
                             </div>
                         )}
@@ -150,16 +259,30 @@ const Dashboard = () => {
                 <div className="bg-white rounded-xl shadow-sm p-4 mb-4 md:p-6">
                     <div className="flex items-start justify-between">
                         <div className="flex-1">
-                            <h2 className="text-lg font-semibold text-gray-800 mb-1">Welcome, Farmer</h2>
+                            <h2 className="text-lg font-semibold text-gray-800 mb-1">
+                                Welcome, {user?.name || 'Farmer'}
+                            </h2>
                             <p className="text-xs text-gray-500 mb-4">Today's farming insights</p>
                             <div className="flex gap-6">
                                 <div>
-                                    <p className="text-xs text-gray-500 mb-1">Today's Earnings</p>
-                                    <p className="text-2xl font-bold text-primary">₹2,450</p>
+                                    <p className="text-xs text-gray-500 mb-1">Total Earnings</p>
+                                    {contractsLoading ? (
+                                        <Loader2 className="w-5 h-5 text-primary animate-spin" />
+                                    ) : (
+                                        <p className="text-2xl font-bold text-primary">
+                                            ₹{totalEarnings.toLocaleString()}
+                                        </p>
+                                    )}
                                 </div>
                                 <div>
-                                    <p className="text-xs text-gray-500 mb-1">Active Contracts</p>
-                                    <p className="text-2xl font-bold text-orange-500">3</p>
+                                    <p className="text-xs text-gray-500 mb-1">Completed Contracts</p>
+                                    {contractsLoading ? (
+                                        <Loader2 className="w-5 h-5 text-orange-500 animate-spin" />
+                                    ) : (
+                                        <p className="text-2xl font-bold text-orange-500">
+                                            {completedContracts.length}
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -172,46 +295,106 @@ const Dashboard = () => {
                 {/* Info Cards Grid */}
                 <div className="grid grid-cols-2 gap-3 mb-4 md:gap-4 md:grid-cols-4">
                     {/* Price Forecast Card */}
-                    <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-4 text-white shadow-sm">
+                    <div
+                        className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-4 text-white shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+                        onClick={() => navigate('/price-prediction')}
+                    >
                         <div className="flex items-start justify-between mb-2">
                             <h3 className="text-sm font-medium">Price Forecast</h3>
                             <TrendingUp className="w-4 h-4" />
                         </div>
-                        <div className="flex items-center gap-1 mb-1">
-                            <TrendingUp className="w-5 h-5" />
-                            <span className="text-xl font-bold">+12%</span>
-                        </div>
-                        <p className="text-xs opacity-90">Next 7 days</p>
+                        {latestPrediction ? (
+                            <>
+                                <p className="text-xl font-bold mb-1">
+                                    ₹{latestPrediction.predictedPrice?.toLocaleString()}
+                                </p>
+                                <p className="text-xs opacity-90 truncate">
+                                    {latestPrediction.commodity}
+                                </p>
+                            </>
+                        ) : (
+                            <>
+                                <p className="text-xl font-bold mb-1">—</p>
+                                <p className="text-xs opacity-90">No predictions yet</p>
+                            </>
+                        )}
                     </div>
 
                     {/* Smart Contracts Card */}
-                    <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 text-white shadow-sm">
+                    <div
+                        className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 text-white shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+                        onClick={() => navigate('/contracts')}
+                    >
                         <div className="flex items-start justify-between mb-2">
                             <h3 className="text-sm font-medium">Smart Contracts</h3>
                             <FileText className="w-4 h-4" />
                         </div>
-                        <p className="text-xl font-bold mb-1">3 Active</p>
-                        <p className="text-xs opacity-90">2 Pending</p>
+                        {contractsLoading ? (
+                            <Loader2 className="w-5 h-5 animate-spin mt-1" />
+                        ) : (
+                            <>
+                                <p className="text-xl font-bold mb-1">
+                                    {completedContracts.length} Completed
+                                </p>
+                                <p className="text-xs opacity-90">
+                                    {openContracts.length} Open
+                                </p>
+                            </>
+                        )}
                     </div>
 
                     {/* Market Insights Card */}
-                    <div className="bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-xl p-4 text-gray-900 shadow-sm">
+                    <div
+                        className="bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-xl p-4 text-gray-900 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+                        onClick={() => navigate('/market-prices')}
+                    >
                         <div className="flex items-start justify-between mb-2">
                             <h3 className="text-sm font-medium">Market Insights</h3>
                             <BarChart3 className="w-4 h-4" />
                         </div>
-                        <p className="text-xl font-bold mb-1">High Demand</p>
-                        <p className="text-xs opacity-80">Wheat & Rice</p>
+                        {predictions.length > 0 ? (
+                            <>
+                                <p className="text-xl font-bold mb-1">
+                                    {predictions.length} Prediction{predictions.length !== 1 ? 's' : ''}
+                                </p>
+                                <p className="text-xs opacity-80 truncate">
+                                    Latest: {latestPrediction?.commodity}
+                                </p>
+                            </>
+                        ) : (
+                            <>
+                                <p className="text-xl font-bold mb-1">Explore</p>
+                                <p className="text-xs opacity-80">View market data</p>
+                            </>
+                        )}
                     </div>
 
                     {/* Weather Alert Card */}
-                    <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-4 text-white shadow-sm">
+                    <div
+                        className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-4 text-white shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+                        onClick={() => navigate('/market-prices')}
+                    >
                         <div className="flex items-start justify-between mb-2">
-                            <h3 className="text-sm font-medium">Weather Alert</h3>
-                            <Sun className="w-4 h-4" />
+                            <h3 className="text-sm font-medium">Weather</h3>
+                            {weatherLoading ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                                <WeatherIcon className="w-4 h-4" />
+                            )}
                         </div>
-                        <p className="text-xl font-bold mb-1">Sunny</p>
-                        <p className="text-xs opacity-90">Perfect for harvest</p>
+                        {weatherLoading ? (
+                            <Loader2 className="w-5 h-5 animate-spin mt-1" />
+                        ) : currentTemp !== null ? (
+                            <>
+                                <p className="text-xl font-bold mb-1">{currentTemp}°C</p>
+                                <p className="text-xs opacity-90 capitalize truncate">{weatherAdvice}</p>
+                            </>
+                        ) : (
+                            <>
+                                <p className="text-xl font-bold mb-1">—</p>
+                                <p className="text-xs opacity-90">Unavailable</p>
+                            </>
+                        )}
                     </div>
                 </div>
 
@@ -221,40 +404,29 @@ const Dashboard = () => {
                         <h3 className="text-lg font-semibold text-gray-800">AI Price Forecast</h3>
                         <div className="flex items-center gap-2 text-sm text-primary">
                             <RefreshCw className="w-4 h-4" />
-                            <span className="font-medium">85% Accuracy</span>
+                            <span className="font-medium">
+                                {predictions.length > 0
+                                    ? `${predictions.length} prediction${predictions.length !== 1 ? 's' : ''}`
+                                    : 'No data'}
+                            </span>
                         </div>
                     </div>
-                    <div className="h-64 md:h-80">
-                        <Line data={chartData} options={chartOptions} />
-                    </div>
-                </div>
-
-                {/* Quick Actions */}
-                <div className="bg-white rounded-xl shadow-sm p-4 md:p-6">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h3>
-                    <div className="grid grid-cols-3 gap-4">
-                        <button className="flex flex-col items-center gap-2 p-4 rounded-lg bg-green-50 hover:bg-green-100 transition-colors">
-                            <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center">
-                                <Plus className="w-6 h-6 text-white" />
-                            </div>
-                            <span className="text-sm font-medium text-gray-700">New Contract</span>
-                        </button>
-                        <button className="flex flex-col items-center gap-2 p-4 rounded-lg bg-blue-50 hover:bg-blue-100 transition-colors">
-                            <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center">
-                                <Search className="w-6 h-6 text-white" />
-                            </div>
-                            <span className="text-sm font-medium text-gray-700">Find Buyers</span>
-                        </button>
-                        <button 
-                            onClick={() => navigate('/wallet')}
-                            className="flex flex-col items-center gap-2 p-4 rounded-lg bg-yellow-50 hover:bg-yellow-100 transition-colors"
-                        >
-                            <div className="w-12 h-12 bg-yellow-500 rounded-lg flex items-center justify-center">
-                                <Wallet className="w-6 h-6 text-white" />
-                            </div>
-                            <span className="text-sm font-medium text-gray-700">View Wallet</span>
-                        </button>
-                    </div>
+                    {!hasChartData ? (
+                        <div className="h-64 md:h-80 flex flex-col items-center justify-center text-gray-400">
+                            <TrendingUp className="w-12 h-12 mb-3 opacity-30" />
+                            <p className="text-sm mb-1">No prediction data yet</p>
+                            <button
+                                onClick={() => navigate('/price-prediction')}
+                                className="text-sm text-primary font-medium hover:underline mt-2"
+                            >
+                                Make your first prediction →
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="h-64 md:h-80">
+                            <Line data={chartData} options={chartOptions} />
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

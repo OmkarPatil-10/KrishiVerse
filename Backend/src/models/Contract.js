@@ -30,6 +30,10 @@ const ContractSchema = new mongoose.Schema({
     type: String,
     default: 'Good quality, fresh produce'
   },
+  farmingMethod: {
+    type: String,
+    default: 'Certified Organic Farm'
+  },
   expectedDeliveryDate: {
     type: Date,
     default: () => new Date(Date.now() + 14 * 24 * 60 * 60 * 1000) // Default: 14 days from now
@@ -58,8 +62,16 @@ const ContractSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['open', 'accepted', 'completed', 'cancelled'],
+    enum: ['open', 'accepted', 'outForDelivery', 'completed', 'cancelled'],
     default: 'open'
+  },
+  transactionHash: {
+    type: String,
+    default: ''
+  },
+  blockchainContractId: {
+    type: Number,
+    default: -1
   },
   acceptedBy: {
     farmerId: String,
@@ -78,7 +90,7 @@ const ContractSchema = new mongoose.Schema({
 });
 
 // FIXED: Simple pre-save middleware WITHOUT next parameter issues
-ContractSchema.pre('save', function() {
+ContractSchema.pre('save', function () {
   // Calculate total budget if we have both values
   if (this.quantity && this.budgetPerUnit) {
     this.totalBudget = this.quantity * this.budgetPerUnit;

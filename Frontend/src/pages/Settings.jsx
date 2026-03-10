@@ -40,7 +40,7 @@ const Settings = () => {
                             <span className="text-lg font-bold text-gray-800 md:hidden">KrishiVerse</span>
                         </div>
                         {!isSidebarOpen && (
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-3 md:hidden">
                                 <Bell className="w-5 h-5 text-gray-600 cursor-pointer" />
                                 <button onClick={openSidebar}>
                                     <User className="w-5 h-5 text-gray-600 cursor-pointer" />
@@ -91,14 +91,12 @@ const Settings = () => {
                                 <span className="text-gray-700">{item.label}</span>
                                 <button
                                     onClick={() => toggleNotification(item.key)}
-                                    className={`relative w-12 h-6 rounded-full transition-colors ${
-                                        notifications[item.key] ? 'bg-primary' : 'bg-gray-300'
-                                    }`}
+                                    className={`relative w-12 h-6 rounded-full transition-colors ${notifications[item.key] ? 'bg-primary' : 'bg-gray-300'
+                                        }`}
                                 >
                                     <span
-                                        className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${
-                                            notifications[item.key] ? 'translate-x-6' : 'translate-x-0'
-                                        }`}
+                                        className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${notifications[item.key] ? 'translate-x-6' : 'translate-x-0'
+                                            }`}
                                     />
                                 </button>
                             </div>
