@@ -32,9 +32,9 @@ const BottomNav = () => {
             <div className="flex justify-around items-center h-16">
                 {navItems.map((item) => {
                     const Icon = item.icon;
-                    const isActive = location.pathname === item.path || 
+                    const isActive = location.pathname === item.path ||
                         (item.path === '/dashboard' && location.pathname === '/');
-                    
+
                     return (
                         <Link
                             key={item.path}

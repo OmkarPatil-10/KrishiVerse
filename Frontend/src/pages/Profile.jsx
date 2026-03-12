@@ -4,6 +4,7 @@ import ProfileSidebar from '../components/ProfileSidebar';
 import { useProfileSidebar } from '../context/ProfileSidebarContext';
 import { useAuth } from '../context/AuthContext';
 import { ConnectWallet, useAddress, useDisconnect } from '@thirdweb-dev/react';
+import api from '../services/api';
 const Profile = () => {
     const { openSidebar, isOpen: isSidebarOpen } = useProfileSidebar();
     const { user, updateProfile } = useAuth();
@@ -53,6 +54,39 @@ const Profile = () => {
     const [selectedCrops, setSelectedCrops] = useState(user?.cropsInterested || []);
     const [selectedIrrigation, setSelectedIrrigation] = useState(['Rainfed', 'Tank', 'Canal']);
     const [isOrganic, setIsOrganic] = useState(true);
+
+    // Contract stats
+    const [contractStats, setContractStats] = useState({ total: 0, active: 0, completed: 0 });
+    const [statsLoading, setStatsLoading] = useState(true);
+
+    // Fetch contract stats
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const res = await api.get('/contracts');
+                if (res.data.success) {
+                    const allContracts = res.data.contracts || [];
+                    const userId = user?._id || user?.id;
+                    const mine = isContractor
+                        ? allContracts.filter(c => c.buyerId === userId)
+                        : allContracts.filter(c => c.acceptedBy?.farmerId === userId);
+                    const filteredTotal = isContractor
+                        ? mine.length
+                        : mine.filter(c => c.status !== 'cancelled' && c.status !== 'open').length;
+                    setContractStats({
+                        total: filteredTotal,
+                        active: mine.filter(c => c.status === 'accepted' || c.status === 'outForDelivery').length,
+                        completed: mine.filter(c => c.status === 'completed').length
+                    });
+                }
+            } catch (err) {
+                console.error('Failed to load contract stats:', err);
+            } finally {
+                setStatsLoading(false);
+            }
+        };
+        if (user) fetchStats();
+    }, [user, isContractor]);
 
     // Contractor form state
     const [contractorData, setContractorData] = useState({
@@ -230,7 +264,7 @@ const Profile = () => {
                                 <span className="text-lg font-bold text-gray-800 md:hidden">KrishiVerse</span>
                             </div>
                             {!isSidebarOpen && (
-                                <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-3 md:hidden">
                                     <Bell className="w-5 h-5 text-gray-600 cursor-pointer" />
                                     <button onClick={openSidebar}>
                                         <User className="w-5 h-5 text-gray-600 cursor-pointer" />
@@ -249,7 +283,7 @@ const Profile = () => {
                 {/* Main Content */}
                 <div className="px-4 py-4 md:px-6 md:py-6 max-w-7xl mx-auto">
                     {/* My Profile Banner */}
-                    <div className="bg-gradient-to-br from-primary to-green-700 rounded-xl shadow-sm p-6 mb-4 text-white relative">
+                    <div className={`rounded-xl shadow-sm p-6 mb-4 text-white relative ${isContractor ? 'bg-gradient-to-br from-blue-500 to-blue-700' : 'bg-gradient-to-br from-primary to-green-700'}`}>
                         <div className="flex items-start justify-between mb-4">
                             <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-4">
@@ -275,20 +309,29 @@ const Profile = () => {
 
                         {/* Badges */}
                         <div className="flex flex-wrap gap-2 justify-center mb-4">
-                            <span className="bg-[#e6f9ed] text-[#2b9f4e] px-4 py-1.5 rounded-full text-sm font-bold flex items-center gap-2 shadow-sm">
-                                <CheckCircle2 className="w-4 h-4 fill-current text-[#e6f9ed]" />
+                            <span className={`px-4 py-1.5 rounded-full text-sm font-bold flex items-center gap-2 shadow-sm ${isContractor ? 'bg-blue-100 text-blue-600' : 'bg-[#e6f9ed] text-[#2b9f4e]'}`}>
+                                <CheckCircle2 className="w-4 h-4 fill-current" />
                                 Verified
                             </span>
                             {(address || user?.walletAddress) && (
-                                <span className="bg-[#e6f9ed] text-[#2b9f4e] px-4 py-1.5 rounded-full text-sm font-bold flex items-center gap-2 shadow-sm">
-                                    <FileCheck className="w-5 h-5 fill-current text-[#e6f9ed]" />
+                                <span className={`px-4 py-1.5 rounded-full text-sm font-bold flex items-center gap-2 shadow-sm ${isContractor ? 'bg-blue-100 text-blue-600' : 'bg-[#e6f9ed] text-[#2b9f4e]'}`}>
+                                    <FileCheck className="w-5 h-5 fill-current" />
                                     <span className="leading-tight text-left text-xs">Smart<br />Contract</span>
                                 </span>
                             )}
-                            <span className="bg-[#e6f9ed] text-[#2b9f4e] px-4 py-1.5 rounded-full text-sm font-bold flex items-center gap-2 shadow-sm">
-                                <Leaf className="w-4 h-4 fill-current text-[#2b9f4e]" />
-                                Organic
-                            </span>
+                            {isContractor ? (
+                                <span className="px-4 py-1.5 rounded-full text-sm font-bold flex items-center gap-2 shadow-sm bg-blue-100 text-blue-600">
+                                    <Briefcase className="w-4 h-4" />
+                                    Business
+                                </span>
+                            ) : (
+                                isOrganic && (
+                                    <span className="px-4 py-1.5 rounded-full text-sm font-bold flex items-center gap-2 shadow-sm bg-[#e6f9ed] text-[#2b9f4e]">
+                                        <Leaf className="w-4 h-4 fill-current text-[#2b9f4e]" />
+                                        Organic
+                                    </span>
+                                )
+                            )}
                         </div>
 
                         {/* Stats Cards */}
@@ -296,18 +339,18 @@ const Profile = () => {
                             {isContractor ? (
                                 <>
                                     {user?.contractorExperience && (
-                                        <div className="bg-blue-500/30 rounded-lg p-3 text-center">
+                                        <div className="bg-white/20 rounded-lg p-3 text-center">
                                             <p className="text-xl font-bold">{user.contractorExperience}</p>
                                             <p className="text-xs opacity-90">Years Exp</p>
                                         </div>
                                     )}
-                                    <div className="bg-yellow-500/30 rounded-lg p-3 text-center">
-                                        <p className="text-xl font-bold">45</p>
+                                    <div className="bg-white/20 rounded-lg p-3 text-center">
+                                        <p className="text-xl font-bold">{statsLoading ? '...' : contractStats.total}</p>
                                         <p className="text-xs opacity-90">Total Contracts</p>
                                     </div>
-                                    <div className="bg-green-500/30 rounded-lg p-3 text-center">
-                                        <p className="text-xl font-bold">12</p>
-                                        <p className="text-xs opacity-90">Active</p>
+                                    <div className="bg-white/20 rounded-lg p-3 text-center">
+                                        <p className="text-xl font-bold">{statsLoading ? '...' : contractStats.completed}</p>
+                                        <p className="text-xs opacity-90">Completed</p>
                                     </div>
                                 </>
                             ) : (
@@ -325,7 +368,7 @@ const Profile = () => {
                                         </div>
                                     )}
                                     <div className="bg-yellow-500/30 rounded-lg p-3 text-center">
-                                        <p className="text-xl font-bold">08</p>
+                                        <p className="text-xl font-bold">{statsLoading ? '...' : contractStats.total}</p>
                                         <p className="text-xs opacity-90">Contracts</p>
                                     </div>
                                 </>
@@ -336,8 +379,8 @@ const Profile = () => {
                     {/* Success/Error Message */}
                     {saveMessage.text && (
                         <div className={`mb-4 p-4 rounded-lg ${saveMessage.type === 'success'
-                                ? 'bg-green-50 text-green-800 border border-green-200'
-                                : 'bg-red-50 text-red-800 border border-red-200'
+                            ? 'bg-green-50 text-green-800 border border-green-200'
+                            : 'bg-red-50 text-red-800 border border-red-200'
                             }`}>
                             {saveMessage.text}
                         </div>
@@ -652,8 +695,8 @@ const Profile = () => {
                                                     setContractorData({ ...contractorData, cropsInterested: newCrops });
                                                 }}
                                                 className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${contractorData.cropsInterested.includes(crop)
-                                                        ? 'bg-green-50 border-2 border-primary text-primary'
-                                                        : 'bg-gray-50 border-2 border-gray-200 text-gray-600'
+                                                    ? 'bg-green-50 border-2 border-primary text-primary'
+                                                    : 'bg-gray-50 border-2 border-gray-200 text-gray-600'
                                                     }`}
                                             >
                                                 {crop}
@@ -805,8 +848,8 @@ const Profile = () => {
                                             key={crop}
                                             onClick={() => toggleCrop(crop)}
                                             className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${selectedCrops.includes(crop)
-                                                    ? 'bg-green-50 border-2 border-primary text-primary'
-                                                    : 'bg-gray-50 border-2 border-gray-200 text-gray-600'
+                                                ? 'bg-green-50 border-2 border-primary text-primary'
+                                                : 'bg-gray-50 border-2 border-gray-200 text-gray-600'
                                                 }`}
                                         >
                                             {crop}
@@ -826,8 +869,8 @@ const Profile = () => {
                                             key={type}
                                             onClick={() => toggleIrrigation(type)}
                                             className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${selectedIrrigation.includes(type)
-                                                    ? 'bg-green-50 border-2 border-primary text-primary'
-                                                    : 'bg-gray-50 border-2 border-gray-200 text-gray-600'
+                                                ? 'bg-green-50 border-2 border-primary text-primary'
+                                                : 'bg-gray-50 border-2 border-gray-200 text-gray-600'
                                                 }`}
                                         >
                                             {type}
@@ -862,7 +905,7 @@ const Profile = () => {
                     )}
 
                     {/* Account Activity Card */}
-                    <div className="bg-white rounded-xl shadow-sm p-4 md:p-6">
+                    {/*<div className="bg-white rounded-xl shadow-sm p-4 md:p-6">
                         <h3 className="text-lg font-bold text-gray-900 mb-4">Account Activity</h3>
                         <div className="space-y-3">
                             <div className="flex items-center justify-between">
@@ -887,7 +930,7 @@ const Profile = () => {
                                 <span className="font-semibold text-gray-900">4.8 / 5.0</span>
                             </div>
                         </div>
-                    </div>
+                    </div>*/}
                 </div>
             </div>
 

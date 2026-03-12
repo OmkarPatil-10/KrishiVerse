@@ -23,8 +23,7 @@ import {
 } from "lucide-react";
 import { ConnectWallet, useAddress } from "@thirdweb-dev/react";
 import api from "../services/api";
-
-
+import { toast } from "react-toastify";
 
 const Signup = () => {
   const [formData, setFormData] = useState({
@@ -170,6 +169,8 @@ const Signup = () => {
       }
 
       await signup(submitData);
+      toast.success('User registered successfully! 🎉');
+      
       // Redirect to login page after successful registration
       navigate("/login");
     } catch (err) {
@@ -605,7 +606,7 @@ const Signup = () => {
                     name="location"
                     value={formData.location}
                     onChange={handleChange}
-                    placeholder="Location"
+                    placeholder="District, State"
                     className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                   />
                 </div>

@@ -1,52 +1,78 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, User, Sprout, FileText, CheckCircle2, Clock, Calendar, ChevronRight } from 'lucide-react';
+import { Bell, User, Sprout, FileText, CheckCircle2, Clock, Calendar, ChevronRight, Loader2 } from 'lucide-react';
 import { useProfileSidebar } from '../context/ProfileSidebarContext';
 import { useAuth } from '../context/AuthContext';
+import api from '../services/api';
 
 const ContractorDashboard = () => {
     const navigate = useNavigate();
     const { openSidebar, isOpen: isSidebarOpen } = useProfileSidebar();
     const { user } = useAuth();
 
-    // Mock contract data
-    const contracts = [
-        {
-            id: 'CT001',
-            farmerName: 'Ayush Rokade',
-            status: 'Active',
-            statusColor: 'bg-green-100 text-green-700',
-            crop: 'Wheat',
-            quantity: '50 Tons',
-            price: 1250000,
-            deliveryDate: '20 Mar 2026'
-        },
-        {
-            id: 'CT002',
-            farmerName: 'Sahil Shete',
-            status: 'Pending',
-            statusColor: 'bg-orange-100 text-orange-700',
-            crop: 'Rice',
-            quantity: '30 Tons',
-            price: 840000,
-            deliveryDate: '20 Mar 2026'
-        },
-        {
-            id: 'CT003',
-            farmerName: 'Vaibhav Shedge',
-            status: 'Completed',
-            statusColor: 'bg-purple-100 text-purple-700',
-            crop: 'Sugarcane',
-            quantity: '100 Tons',
-            price: 2800000,
-            deliveryDate: '20 Mar 2026'
-        }
-    ];
+    const [contracts, setContracts] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    // Fetch contracts from API
+    useEffect(() => {
+        const fetchContracts = async () => {
+            try {
+                const response = await api.get(`/contracts?buyerId=${user?._id || user?.id}`);
+                if (response.data.success) {
+                    setContracts(response.data.contracts || []);
+                }
+            } catch (error) {
+                console.error('Error fetching contracts:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchContracts();
+    }, []);
 
     const stats = {
-        total: 45,
-        active: 12,
-        completed: 28,
-        pending: 5
+        total: contracts.length,
+        active: contracts.filter(c => c.status === 'accepted').length,
+        completed: contracts.filter(c => c.status === 'completed').length,
+        pending: contracts.filter(c => c.status === 'open').length,
+    };
+
+    // Show only the 3 most recent contracts
+    const recentContracts = [...contracts]
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+        .slice(0, 3);
+
+    const getStatusStyle = (status) => {
+        switch (status) {
+            case 'open': return 'bg-orange-100 text-orange-600';
+            case 'accepted': return 'bg-green-100 text-green-600';
+            case 'outForDelivery': return 'bg-purple-100 text-purple-600';
+            case 'completed': return 'bg-blue-100 text-blue-600';
+            case 'cancelled': return 'bg-red-100 text-red-700';
+            default: return 'bg-gray-100 text-gray-700';
+        }
+    };
+
+    const getStatusLabel = (status) => {
+        switch (status) {
+            case 'open': return 'Pending';
+            case 'accepted': return 'Active';
+            case 'outForDelivery': return 'Out for Delivery';
+            case 'completed': return 'Completed';
+            case 'cancelled': return 'Cancelled';
+            default: return status;
+        }
+    };
+
+    const formatDate = (dateStr) => {
+        if (!dateStr) return 'N/A';
+        const d = new Date(dateStr);
+        return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    };
+
+    const getContractId = (contract) => {
+        const id = contract._id || contract.id || '';
+        return `KV${id.toString().slice(-3).toUpperCase()}`;
     };
 
     return (
@@ -67,10 +93,12 @@ const ContractorDashboard = () => {
                             </div>
                         </div>
                         {!isSidebarOpen && (
-                            <div className="flex items-center gap-3">
-                                <Bell className="w-5 h-5 text-gray-600 cursor-pointer" />
+                            <div className="flex items-center gap-3 md:hidden">
+                                <button onClick={() => navigate('/notifications')}>
+                                    <Bell className="w-5 h-5 text-gray-600 hover:text-green-600 transition-colors cursor-pointer" />
+                                </button>
                                 <button onClick={openSidebar}>
-                                    <User className="w-5 h-5 text-gray-600 cursor-pointer" />
+                                    <User className="w-5 h-5 text-gray-600 hover:text-green-600 transition-colors cursor-pointer" />
                                 </button>
                             </div>
                         )}
@@ -130,63 +158,82 @@ const ContractorDashboard = () => {
                 <div className="bg-white rounded-xl shadow-sm p-4 md:p-6">
                     <div className="flex items-center justify-between mb-4">
                         <h2 className="text-lg md:text-xl font-bold text-gray-900">Recent Contract</h2>
-                        <button className="text-blue-600 font-medium hover:text-blue-700 transition-colors text-sm">
+                        <button
+                            onClick={() => navigate('/contracts')}
+                            className="text-blue-600 font-medium hover:text-blue-700 transition-colors text-sm"
+                        >
                             View All
                         </button>
                     </div>
 
-                    <div className="space-y-3">
-                        {contracts.map((contract) => (
-                            <div
-                                key={contract.id}
-                                className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
-                            >
-                                <div className="flex items-start justify-between mb-3">
-                                    <div className="flex-1">
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <h3 className="font-bold text-gray-900">{contract.farmerName}</h3>
-                                            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${contract.statusColor}`}>
-                                                {contract.status}
-                                            </span>
-                                        </div>
-                                        <p className="text-sm text-gray-600">Contract ID: {contract.id}</p>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-3 mb-3">
-                                    <div>
-                                        <p className="text-xs text-gray-500">Crop</p>
-                                        <p className="font-semibold text-gray-900">{contract.crop}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-xs text-gray-500">Quantity</p>
-                                        <p className="font-semibold text-gray-900">{contract.quantity}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-xs text-gray-500">Price</p>
-                                        <p className="font-semibold text-blue-600">₹{contract.price.toLocaleString()}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-xs text-gray-500">Delivery</p>
-                                        <div className="flex items-center gap-1">
-                                            <Calendar className="w-4 h-4 text-gray-500" />
-                                            <p className="font-semibold text-gray-900">{contract.deliveryDate}</p>
+                    {isLoading ? (
+                        <div className="flex justify-center items-center py-10">
+                            <Loader2 className="w-7 h-7 text-blue-500 animate-spin" />
+                        </div>
+                    ) : recentContracts.length === 0 ? (
+                        <div className="text-center py-10">
+                            <p className="text-gray-500">No contracts yet. Create your first contract!</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-3">
+                            {recentContracts.map((contract) => (
+                                <div
+                                    key={contract._id || contract.id}
+                                    className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                                >
+                                    <div className="flex items-start justify-between mb-3">
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <h3 className="font-bold text-gray-900">
+                                                    {contract.acceptedBy?.farmerName || contract.buyerName || 'Unknown'}
+                                                </h3>
+                                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${getStatusStyle(contract.status)}`}>
+                                                    {getStatusLabel(contract.status)}
+                                                </span>
+                                            </div>
+                                            <p className="text-sm text-gray-500">Contract ID: {getContractId(contract)}</p>
                                         </div>
                                     </div>
-                                </div>
 
-                                <div className="flex justify-end pt-3 border-t border-gray-100">
-                                    <button
-                                        onClick={() => navigate(`/contracts/${contract.id}`)}
-                                        className="text-blue-600 font-medium hover:text-blue-700 transition-colors flex items-center gap-1"
-                                    >
-                                        View Details
-                                        <ChevronRight className="w-4 h-4" />
-                                    </button>
+                                    <div className="grid grid-cols-2 gap-3 mb-3">
+                                        <div>
+                                            <p className="text-xs text-gray-500">Crop</p>
+                                            <p className="font-semibold text-gray-900">{contract.cropName || 'N/A'}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs text-gray-500">Quantity</p>
+                                            <p className="font-semibold text-gray-900">
+                                                {contract.quantity || 0} {contract.quantityUnit || 'Tons'}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs text-gray-500">Price</p>
+                                            <p className="font-semibold text-blue-600">
+                                                ₹{(contract.totalBudget || contract.budgetPerUnit * contract.quantity || 0).toLocaleString()}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs text-gray-500">Delivery</p>
+                                            <div className="flex items-center gap-1">
+                                                <Calendar className="w-4 h-4 text-gray-500" />
+                                                <p className="font-semibold text-gray-900">{formatDate(contract.expectedDeliveryDate)}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex justify-end pt-3 border-t border-gray-100">
+                                        <button
+                                            onClick={() => navigate(`/contracts/${contract._id || contract.id}`)}
+                                            className="text-blue-600 font-medium hover:text-blue-700 transition-colors flex items-center gap-1"
+                                        >
+                                            View Details
+                                            <ChevronRight className="w-4 h-4" />
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
-                    </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
@@ -194,4 +241,3 @@ const ContractorDashboard = () => {
 };
 
 export default ContractorDashboard;
-

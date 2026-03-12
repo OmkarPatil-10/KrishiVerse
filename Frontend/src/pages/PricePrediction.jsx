@@ -119,6 +119,26 @@ const PricePrediction = () => {
             } else {
                 setPriceResult(result);
                 setShowPriceResults(true);
+
+                // Save prediction to localStorage for MarketPrices page
+                const prediction = {
+                    id: Date.now(),
+                    commodity: priceForm.commodity,
+                    variety: priceForm.variety,
+                    market: priceForm.market,
+                    district: priceForm.district,
+                    grade: priceForm.grade,
+                    month: monthNames[priceForm.month - 1],
+                    predictedPrice: result.predicted_price,
+                    minPrice: result.min_price,
+                    maxPrice: result.max_price,
+                    confidence: result.confidence,
+                    timestamp: new Date().toISOString(),
+                };
+                const existing = JSON.parse(localStorage.getItem('krishiverse_predictions') || '[]');
+                existing.unshift(prediction); // Newest first
+                // Keep only the latest 20 predictions
+                localStorage.setItem('krishiverse_predictions', JSON.stringify(existing.slice(0, 20)));
             }
         } catch (err) {
             setPriceError(err.response?.data?.error || 'Failed to get price prediction. Make sure the Flask server is running.');
@@ -175,7 +195,7 @@ const PricePrediction = () => {
                             <span className="text-lg font-bold text-gray-800 md:hidden">KrishiVerse</span>
                         </div>
                         {!isSidebarOpen && (
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-3 md:hidden">
                                 <Bell className="w-5 h-5 text-gray-600 cursor-pointer" />
                                 <button onClick={openSidebar}>
                                     <User className="w-5 h-5 text-gray-600 cursor-pointer" />

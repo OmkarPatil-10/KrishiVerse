@@ -12,6 +12,10 @@ import "react-toastify/dist/ReactToastify.css";
 
 const StateContext = createContext();
 
+// Hardcoded INR to ETH conversion rate
+// 1 INR ≈ 0.0000034 ETH (approx ₹2,94,000 = 1 ETH)
+const INR_TO_ETH_RATE = 0.0000034;
+
 export const StateContextProvider = ({ children }) => {
 
   const { contract } = useContract(
@@ -26,14 +30,30 @@ export const StateContextProvider = ({ children }) => {
   const [contracts, setContracts] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Helper: Convert INR amount to ETH (wei)
+  const inrToWei = (inrAmount) => {
+    const ethAmount = inrAmount * INR_TO_ETH_RATE;
+    // Round to 18 decimal places max for ethers parsing
+    return ethers.utils.parseEther(ethAmount.toFixed(18));
+  };
+
   // ------------------------------------------------
   // Create Contract (Contractor)
+  // Input: form.quantity, form.pricePerTon in INR
+  // The INR total is converted to ETH and locked on-chain
   // ------------------------------------------------
 
   const createKrishiContract = async (form) => {
     try {
+      // Convert pricePerTon from INR to wei
+      // The smart contract does: totalAmount = quantity * pricePerTon
+      // and checks: msg.value == totalAmount
+      // So we must pass pricePerTon in wei, not INR, for the math to match
+      const pricePerTonWei = inrToWei(form.pricePerTon);
+      const totalAmountWei = pricePerTonWei.mul(form.quantity);
 
-      const totalAmount = form.quantity * form.pricePerTon;
+      console.log(`💰 Price/ton: ₹${form.pricePerTon} → ${ethers.utils.formatEther(pricePerTonWei)} ETH`);
+      console.log(`💰 Total (${form.quantity} × price): ${ethers.utils.formatEther(totalAmountWei)} ETH`);
 
       const data = await contract.call(
         "createContract",
@@ -41,14 +61,14 @@ export const StateContextProvider = ({ children }) => {
           form.farmer,
           form.cropName,
           form.quantity,
-          form.pricePerTon
+          pricePerTonWei  // pass wei, not INR
         ],
         {
-          value: totalAmount
+          value: totalAmountWei  // quantity * pricePerTonWei — matches contract's calculation
         }
       );
 
-      toast.success("Contract created successfully 🌾");
+      toast.success("Contract created & funds locked on blockchain 🌾");
 
       console.log("Create Contract:", data);
 
@@ -56,10 +76,46 @@ export const StateContextProvider = ({ children }) => {
 
     } catch (error) {
 
-      toast.error("Error creating contract");
-
+      toast.error("Error creating contract on blockchain");
       console.log("Create Contract Error:", error);
+      throw error;
+    }
+  };
 
+  // ------------------------------------------------
+  // Update Contract (Contractor)
+  // ------------------------------------------------
+  const updateContract = async (id, newPricePerTonInr, quantity) => {
+    try {
+      const newPricePerTonWei = inrToWei(newPricePerTonInr);
+
+      // Compute old and new totals in wei using BigNumber math,
+      // exactly mirroring the Solidity: newTotal = quantity * newPricePerTon
+      // This avoids floating-point drift from converting INR differences separately.
+      const onChainData = await contract.call("getContract", [id]);
+      const oldTotalWei = onChainData.totalAmount; // BigNumber from chain
+      const newTotalWei = newPricePerTonWei.mul(quantity);
+
+      let additionalPaymentWei = ethers.utils.parseEther("0");
+      if (newTotalWei.gt(oldTotalWei)) {
+        additionalPaymentWei = newTotalWei.sub(oldTotalWei);
+      }
+
+      console.log(`Updating Contract ${id}`);
+      console.log(`  Old total: ${ethers.utils.formatEther(oldTotalWei)} ETH`);
+      console.log(`  New total: ${ethers.utils.formatEther(newTotalWei)} ETH`);
+      console.log(`  Additional payment: ${ethers.utils.formatEther(additionalPaymentWei)} ETH`);
+      
+      const data = await contract.call("updateContract", [id, newPricePerTonWei], {
+        value: additionalPaymentWei
+      });
+
+      toast.success("Contract updated on blockchain 📝");
+      return data;
+    } catch (error) {
+      toast.error("Error updating contract on blockchain");
+      console.log("Update Contract Error:", error);
+      throw error;
     }
   };
 
@@ -73,21 +129,20 @@ export const StateContextProvider = ({ children }) => {
 
       const data = await contract.call("acceptContract", [id]);
 
-      toast.success("Contract Accepted");
+      toast.success("Contract Accepted on blockchain ✅");
 
       return data;
 
     } catch (error) {
 
-      toast.error("Error accepting contract");
-
+      toast.error("Error accepting contract on blockchain");
       console.log(error);
-
+      throw error;
     }
   };
 
   // ------------------------------------------------
-  // Reject Contract (Farmer)
+  // Reject Contract (Farmer) → Refund to contractor
   // ------------------------------------------------
 
   const rejectContract = async (id) => {
@@ -96,21 +151,20 @@ export const StateContextProvider = ({ children }) => {
 
       const data = await contract.call("rejectContract", [id]);
 
-      toast.success("Contract Rejected");
+      toast.success("Contract Rejected. Funds returned to contractor 💸");
 
       return data;
 
     } catch (error) {
 
-      toast.error("Error rejecting contract");
-
+      toast.error("Error rejecting contract on blockchain");
       console.log(error);
-
+      throw error;
     }
   };
 
   // ------------------------------------------------
-  // Farmer Marks Delivery
+  // Farmer Marks Out For Delivery
   // ------------------------------------------------
 
   const markOutForDelivery = async (id) => {
@@ -125,15 +179,14 @@ export const StateContextProvider = ({ children }) => {
 
     } catch (error) {
 
-      toast.error("Error marking delivery");
-
+      toast.error("Error marking delivery on blockchain");
       console.log(error);
-
+      throw error;
     }
   };
 
   // ------------------------------------------------
-  // Contractor Confirms Delivery
+  // Contractor Confirms Delivery → Release payment to farmer
   // ------------------------------------------------
 
   const confirmDelivery = async (id) => {
@@ -148,10 +201,9 @@ export const StateContextProvider = ({ children }) => {
 
     } catch (error) {
 
-      toast.error("Error confirming delivery");
-
+      toast.error("Error confirming delivery on blockchain");
       console.log(error);
-
+      throw error;
     }
   };
 
@@ -211,7 +263,11 @@ export const StateContextProvider = ({ children }) => {
         disconnect,
         connectionStatus,
 
+        INR_TO_ETH_RATE,
+        inrToWei,
+
         createKrishiContract,
+        updateContract,
         acceptContract,
         rejectContract,
         markOutForDelivery,
