@@ -239,7 +239,7 @@ const CreateContractForm = ({ onClose, initialFarmer = '' }) => {
                         {/* Quantity + Price — side by side */}
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm font-semibold text-gray-800 mb-2">Quantity (Tons)</label>
+                                <label className="block text-sm font-semibold text-gray-800 mb-2">Quantity (Quintal)</label>
                                 <input
                                     type="number"
                                     name="quantity"
@@ -252,7 +252,7 @@ const CreateContractForm = ({ onClose, initialFarmer = '' }) => {
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-semibold text-gray-800 mb-2">Price per Ton (₹)</label>
+                                <label className="block text-sm font-semibold text-gray-800 mb-2">Price per Quintal (₹)</label>
                                 <input
                                     type="number"
                                     name="pricePerTon"
