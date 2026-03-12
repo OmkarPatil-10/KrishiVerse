@@ -319,10 +319,19 @@ const Profile = () => {
                                     <span className="leading-tight text-left text-xs">Smart<br />Contract</span>
                                 </span>
                             )}
-                            <span className={`px-4 py-1.5 rounded-full text-sm font-bold flex items-center gap-2 shadow-sm ${isContractor ? 'bg-blue-100 text-blue-600' : 'bg-[#e6f9ed] text-[#2b9f4e]'}`}>
-                                {isContractor ? <Briefcase className="w-4 h-4" /> : <Leaf className="w-4 h-4 fill-current text-[#2b9f4e]" />}
-                                {isContractor ? 'Business' : 'Organic'}
-                            </span>
+                            {isContractor ? (
+                                <span className="px-4 py-1.5 rounded-full text-sm font-bold flex items-center gap-2 shadow-sm bg-blue-100 text-blue-600">
+                                    <Briefcase className="w-4 h-4" />
+                                    Business
+                                </span>
+                            ) : (
+                                isOrganic && (
+                                    <span className="px-4 py-1.5 rounded-full text-sm font-bold flex items-center gap-2 shadow-sm bg-[#e6f9ed] text-[#2b9f4e]">
+                                        <Leaf className="w-4 h-4 fill-current text-[#2b9f4e]" />
+                                        Organic
+                                    </span>
+                                )
+                            )}
                         </div>
 
                         {/* Stats Cards */}
