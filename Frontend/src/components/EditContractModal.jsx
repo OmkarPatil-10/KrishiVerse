@@ -18,15 +18,15 @@ const EditContractModal = ({ isOpen, onClose, contract, onUpdateSuccess }) => {
             setQuantity(contract.quantity || '');
             setPrice(contract.budgetPerUnit || '');
             if (contract.expectedDeliveryDate) {
-                 const d = new Date(contract.expectedDeliveryDate);
-                 setDeliveryDate(d.toISOString().split('T')[0]);
+                const d = new Date(contract.expectedDeliveryDate);
+                setDeliveryDate(d.toISOString().split('T')[0]);
             }
         }
     }, [contract, isOpen]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
+
         if (!quantity || !price || !deliveryDate) {
             toast.error('Please fill all fields');
             return;
@@ -40,13 +40,10 @@ const EditContractModal = ({ isOpen, onClose, contract, onUpdateSuccess }) => {
             // Step 1: Update on Blockchain (only if there's an existing smart contract)
             const bcId = contract.blockchainContractId;
             if (bcId !== undefined && bcId >= 0 && walletAddress) {
-                 // Check if price changed - the user's KrishiVerseEscrow only allows price change
-                 if (numPrice !== Number(contract.budgetPerUnit)) {
-                     // Fire smart contract transaction
-                     // Parameters for updateContract in context are (id, newPricePerTon, oldTotalAmount, newTotalAmount) -> handled safely?
-                     // Let's pass what's needed for context
-                     await bcUpdateContract(bcId, numPrice, contract.totalBudget, (numQuantity * numPrice));
-                 }
+                // Check if price or quantity changed - both affect the on-chain total
+                if (numPrice !== Number(contract.budgetPerUnit) || numQuantity !== Number(contract.quantity)) {
+                    await bcUpdateContract(bcId, numPrice, numQuantity);
+                }
             }
 
             // Step 2: Update in MongoDB
@@ -55,9 +52,9 @@ const EditContractModal = ({ isOpen, onClose, contract, onUpdateSuccess }) => {
                 budgetPerUnit: numPrice,
                 expectedDeliveryDate: deliveryDate
             };
-            
+
             const res = await api.put(`/contracts/${contract._id || contract.id}`, updatePayload);
-            
+
             if (res.data.success) {
                 toast.success('Contract updated successfully!');
                 onUpdateSuccess(res.data.contract);
@@ -83,7 +80,7 @@ const EditContractModal = ({ isOpen, onClose, contract, onUpdateSuccess }) => {
                         <X className="w-5 h-5 text-gray-500" />
                     </button>
                 </div>
-                
+
                 <form onSubmit={handleSubmit} className="p-5">
                     <div className="space-y-4">
                         <div>
@@ -97,7 +94,7 @@ const EditContractModal = ({ isOpen, onClose, contract, onUpdateSuccess }) => {
                                 className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                             />
                         </div>
-                        
+
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Price per {contract?.quantityUnit || 'Quintal'} (₹)</label>
                             <input

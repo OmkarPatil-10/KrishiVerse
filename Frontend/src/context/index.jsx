@@ -85,16 +85,28 @@ export const StateContextProvider = ({ children }) => {
   // ------------------------------------------------
   // Update Contract (Contractor)
   // ------------------------------------------------
-  const updateContract = async (id, newPricePerTonInr, oldTotalAmountInr, newTotalAmountInr) => {
+  const updateContract = async (id, newPricePerTonInr, quantity) => {
     try {
-      const pricePerTonWei = inrToWei(newPricePerTonInr);
-      const additionalPaymentWei = newTotalAmountInr > oldTotalAmountInr 
-          ? inrToWei(newTotalAmountInr - oldTotalAmountInr) 
-          : ethers.utils.parseEther("0");
+      const newPricePerTonWei = inrToWei(newPricePerTonInr);
 
-      console.log(`Updating Contract ${id} to price: ${ethers.utils.formatEther(pricePerTonWei)} ETH`);
+      // Compute old and new totals in wei using BigNumber math,
+      // exactly mirroring the Solidity: newTotal = quantity * newPricePerTon
+      // This avoids floating-point drift from converting INR differences separately.
+      const onChainData = await contract.call("getContract", [id]);
+      const oldTotalWei = onChainData.totalAmount; // BigNumber from chain
+      const newTotalWei = newPricePerTonWei.mul(quantity);
+
+      let additionalPaymentWei = ethers.utils.parseEther("0");
+      if (newTotalWei.gt(oldTotalWei)) {
+        additionalPaymentWei = newTotalWei.sub(oldTotalWei);
+      }
+
+      console.log(`Updating Contract ${id}`);
+      console.log(`  Old total: ${ethers.utils.formatEther(oldTotalWei)} ETH`);
+      console.log(`  New total: ${ethers.utils.formatEther(newTotalWei)} ETH`);
+      console.log(`  Additional payment: ${ethers.utils.formatEther(additionalPaymentWei)} ETH`);
       
-      const data = await contract.call("updateContract", [id, pricePerTonWei], {
+      const data = await contract.call("updateContract", [id, newPricePerTonWei], {
         value: additionalPaymentWei
       });
 

@@ -85,7 +85,9 @@ const Contracts = () => {
     const farmerStats = {
         active: contracts.filter(c => c.status === 'accepted').length,
         pending: contracts.filter(c => c.status === 'open').length,
-        totalValue: contracts.reduce((sum, c) => sum + (c.totalBudget || c.budgetPerUnit * c.quantity || 0), 0),
+        totalValue: contracts
+            .filter(c => c.status !== 'cancelled' && c.status !== 'open')
+            .reduce((sum, c) => sum + (c.totalBudget || c.budgetPerUnit * c.quantity || 0), 0),
     };
 
     // Format date
