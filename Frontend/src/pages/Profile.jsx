@@ -70,8 +70,11 @@ const Profile = () => {
                     const mine = isContractor
                         ? allContracts.filter(c => c.buyerId === userId)
                         : allContracts.filter(c => c.acceptedBy?.farmerId === userId);
+                    const filteredTotal = isContractor
+                        ? mine.length
+                        : mine.filter(c => c.status !== 'cancelled' && c.status !== 'open').length;
                     setContractStats({
-                        total: mine.length,
+                        total: filteredTotal,
                         active: mine.filter(c => c.status === 'accepted' || c.status === 'outForDelivery').length,
                         completed: mine.filter(c => c.status === 'completed').length
                     });
