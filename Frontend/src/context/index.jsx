@@ -13,8 +13,8 @@ import "react-toastify/dist/ReactToastify.css";
 const StateContext = createContext();
 
 // Hardcoded INR to ETH conversion rate
-// 1 INR ≈ 0.0000034 ETH (approx ₹2,94,000 = 1 ETH)
-const INR_TO_ETH_RATE = 0.0000034;
+// 1 INR ≈ 0.0000034 ETH (approx ₹1,90,000 = 1 ETH)
+const INR_TO_ETH_RATE = 0.0000052632;
 
 export const StateContextProvider = ({ children }) => {
 

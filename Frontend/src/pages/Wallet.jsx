@@ -7,7 +7,7 @@ import { ethers } from 'ethers';
 import api from '../services/api';
 
 // Hardcoded ETH to INR rate (same as in StateContext)
-const ETH_TO_INR_RATE = 1 / 0.0000034; // ~₹2,94,117 per ETH
+const ETH_TO_INR_RATE = 1 / 0.0000052632; // ~₹1,90,000 per ETH
 
 const Wallet = () => {
     const { openSidebar, isOpen: isSidebarOpen } = useProfileSidebar();
