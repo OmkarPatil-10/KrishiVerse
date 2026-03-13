@@ -297,7 +297,7 @@ const Dashboard = () => {
                     {/* Price Forecast Card */}
                     <div
                         className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-4 text-white shadow-sm cursor-pointer hover:shadow-md transition-shadow"
-                        onClick={() => navigate('/price-prediction')}
+                        onClick={() => navigate('/prediction')}
                     >
                         <div className="flex items-start justify-between mb-2">
                             <h3 className="text-sm font-medium">Price Forecast</h3>
@@ -346,7 +346,7 @@ const Dashboard = () => {
                     {/* Market Insights Card */}
                     <div
                         className="bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-xl p-4 text-gray-900 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
-                        onClick={() => navigate('/market-prices')}
+                        onClick={() => navigate('/market')}
                     >
                         <div className="flex items-start justify-between mb-2">
                             <h3 className="text-sm font-medium">Market Insights</h3>
@@ -372,7 +372,7 @@ const Dashboard = () => {
                     {/* Weather Alert Card */}
                     <div
                         className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-4 text-white shadow-sm cursor-pointer hover:shadow-md transition-shadow"
-                        onClick={() => navigate('/market-prices')}
+                        onClick={() => navigate('/market')}
                     >
                         <div className="flex items-start justify-between mb-2">
                             <h3 className="text-sm font-medium">Weather</h3>
