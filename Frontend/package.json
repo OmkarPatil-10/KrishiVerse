@@ -16,6 +16,7 @@
     "chart.js": "^4.5.1",
     "clsx": "^2.1.1",
     "ethers": "^5.8.0",
+    "framer-motion": "^12.37.0",
     "i18next": "^25.8.0",
     "jspdf": "^4.2.0",
     "lucide-react": "^0.563.0",

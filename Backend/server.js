@@ -40,6 +40,7 @@ const userRoutes = require('./src/routes/userRoutes');
 const otpRoutes = require('./src/routes/otpRoutes');
 const supportRoutes = require('./src/routes/supportRoutes');
 const notificationRoutes = require('./src/routes/notificationRoutes');
+const chatbotRoutes = require('./src/routes/chatbotRoutes');
 
 // ========== USE ALL ROUTES HERE ==========
 app.use('/api/auth', authRoutes);
@@ -51,6 +52,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/otp', otpRoutes);
 app.use('/api/support', supportRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/chatbot', chatbotRoutes);
 
 // Test route
 app.get('/api/health', (req, res) => {
