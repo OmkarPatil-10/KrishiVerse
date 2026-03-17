@@ -16,6 +16,7 @@ import FarmersList from './pages/FarmersList';
 import FarmerDetails from './pages/FarmerDetails';
 import { useAuth } from './context/AuthContext';
 import PropTypes from 'prop-types';
+import ChatBot from './components/ChatBot';
 
 
 const ProtectedRoute = ({ children }) => {
@@ -56,7 +57,7 @@ function App() {
             <Route path="/prediction" element={<PricePrediction />} />
           </Route>
         </Routes>
-
+        <ChatBot />
       </div>
     </Router>
   );
