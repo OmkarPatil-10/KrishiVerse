@@ -108,7 +108,7 @@ const Wallet = () => {
     return (
         <div className="min-h-screen bg-gray-50 pb-20 md:pb-6">
             {/* Top Header Section */}
-            <div className="bg-white shadow-sm sticky top-0 z-10 md:relative md:shadow-none">
+            <div className="bg-white shadow-sm sticky top-0 z-10 md:relative md:shadow-none md:hidden">
                 <div className="px-4 py-3 md:px-6 md:py-4">
                     <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">

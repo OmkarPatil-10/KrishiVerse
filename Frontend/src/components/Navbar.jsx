@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import GoogleTranslate from '../GoogleTranslate';
 import { MessageCircle, Bell } from 'lucide-react';
 import api from '../services/api';
+import { Sprout } from 'lucide-react';
 
 const Navbar = () => {
     const { i18n, t } = useTranslation();
@@ -48,6 +49,9 @@ const Navbar = () => {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between h-16">
                     <div className="flex items-center">
+                        <div className="w-8 h-8  mr-2 bg-primary rounded-full flex items-center justify-center">
+                                <Sprout className="w-5 h-5 text-white" />
+                            </div>
                         <span className="text-2xl font-bold text-primary">KrishiVerse</span>
                     </div>
                     <div className="flex items-center space-x-4">
