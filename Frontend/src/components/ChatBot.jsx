@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageSquare, X, Send, Bot, User, Loader2 } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import api from '../services/api';
 
 const ChatBot = () => {
@@ -47,7 +49,7 @@ const ChatBot = () => {
     };
 
     return (
-        <div className="fixed bottom-6 right-6 z-[9999] flex flex-col items-end">
+        <div className="fixed bottom-20 right-4 md:bottom-6 md:right-6 z-[9999] flex flex-col items-end">
             <AnimatePresence>
                 {isOpen && (
                     <motion.div
@@ -55,7 +57,7 @@ const ChatBot = () => {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 20, scale: 0.95 }}
                         transition={{ duration: 0.2 }}
-                        className="mb-4 w-[350px] sm:w-[400px] h-[500px] bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col border border-emerald-100"
+                        className="mb-4 w-[calc(100vw-2rem)] sm:w-[400px] h-[500px] bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col border border-emerald-100"
                     >
                         {/* Header */}
                         <div className="bg-gradient-to-r from-emerald-600 to-teal-600 p-4 flex items-center justify-between text-white shadow-md">
@@ -96,7 +98,23 @@ const ChatBot = () => {
                                                 ? (msg.isError ? 'bg-red-50 text-red-700 border border-red-100' : 'bg-white text-gray-800 rounded-tl-none border border-emerald-50') 
                                                 : 'bg-teal-600 text-white rounded-tr-none'
                                         }`}>
-                                            <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.text}</p>
+                                            <div className="text-sm leading-relaxed prose-custom">
+                                                <ReactMarkdown 
+                                                    remarkPlugins={[remarkGfm]}
+                                                    components={{
+                                                        h1: ({node, ...props}) => <h1 className="text-lg font-bold mb-2 mt-1 border-b pb-1" {...props} />,
+                                                        h2: ({node, ...props}) => <h2 className="text-base font-bold mb-2 mt-1" {...props} />,
+                                                        h3: ({node, ...props}) => <h3 className="text-sm font-bold mb-1 mt-1" {...props} />,
+                                                        p: ({node, ...props}) => <p className="mb-2 last:mb-0" {...props} />,
+                                                        ul: ({node, ...props}) => <ul className="list-disc ml-4 mb-2" {...props} />,
+                                                        ol: ({node, ...props}) => <ol className="list-decimal ml-4 mb-2" {...props} />,
+                                                        li: ({node, ...props}) => <li className="mb-1" {...props} />,
+                                                        strong: ({node, ...props}) => <strong className="font-bold text-emerald-700" {...props} style={!msg.isBot ? {color: 'white'} : {}} />,
+                                                    }}
+                                                >
+                                                    {msg.text}
+                                                </ReactMarkdown>
+                                            </div>
                                         </div>
                                     </div>
                                 </motion.div>

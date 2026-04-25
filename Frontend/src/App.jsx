@@ -30,6 +30,8 @@ ProtectedRoute.propTypes = {
 };
 
 function App() {
+  const { user } = useAuth();
+
   return (
     <Router>
       <div className="min-h-screen bg-gray-50 text-gray-900 font-sans">
@@ -57,7 +59,7 @@ function App() {
             <Route path="/prediction" element={<PricePrediction />} />
           </Route>
         </Routes>
-        <ChatBot />
+        {user && <ChatBot />}
       </div>
     </Router>
   );
