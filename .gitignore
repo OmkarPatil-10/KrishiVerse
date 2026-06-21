@@ -1,2 +1,8 @@
+crop_recommendation_system/combined_dataset.csv
+crop_recommendation_system/crop_recommendation_data.csv
+crop_recommendation_system/Crop_recommendation.csv
 crop_recommendation_system/maharashtra_districts_complete.csv
+crop_recommendation_system/maharashtra_districts_sample.csv
+crop_recommendation_system/price_prediction_cleaned.csv
 Backend/.env
+.gitignore
